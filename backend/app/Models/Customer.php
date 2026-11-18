@@ -4,12 +4,13 @@ namespace App\Models;
 
 use App\Enums\UserType;
 use Database\Factories\CustomerFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-class Customer extends User
+class Customer extends User implements MustVerifyEmail
 {
     /** @use HasFactory<CustomerFactory> */
     use HasFactory;
