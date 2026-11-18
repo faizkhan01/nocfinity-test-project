@@ -9,6 +9,7 @@ import { useApiForm } from "@/hooks/use-api-form";
 import { api } from "@/lib/api/client";
 import { changePasswordSchema } from "@/lib/validation";
 import { useStaff } from "./staff-context";
+import { TwoFactorCard } from "./two-factor-card";
 import { Badge, Card, PageHeader, TextInput } from "./ui";
 
 export function ProfileForms() {
@@ -31,7 +32,7 @@ export function ProfileForms() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="My profile" description="Update your name and password." />
+      <PageHeader title="My profile" description="Update your name, password and sign-in security." />
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <Card className="p-6">
           <form onSubmit={saveProfile} noValidate className="flex flex-col gap-4">
@@ -63,6 +64,7 @@ export function ProfileForms() {
             </Button>
           </form>
         </Card>
+        <TwoFactorCard />
       </div>
     </div>
   );

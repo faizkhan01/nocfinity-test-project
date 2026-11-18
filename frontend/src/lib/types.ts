@@ -157,4 +157,6 @@ export type Staff = {
   permissions?: string[];
 };
 
+export type TwoFactorSetup = { secret: string; otpauth_url: string; qr_code: string };
+
 export type ApiErrorBody = { message: string; code?: string; errors?: Record<string, string[]> };

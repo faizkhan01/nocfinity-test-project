@@ -73,6 +73,7 @@ export function StaffView() {
                       {s.is_super_admin && <Lock className="size-3.5" aria-label="Protected account" />}
                       {s.name}
                       {s.id === me.id && <Badge>You</Badge>}
+                      {s.two_factor_enabled && <Badge tone="green">2FA</Badge>}
                     </span>
                     <span className="text-xs text-ink/50">{s.email}</span>
                   </td>
@@ -118,6 +119,7 @@ function StaffModal({ staff, onClose, onSaved }: { staff: Staff | null; onClose:
   const roles = useRoles();
   const [v, setV] = useState({ name: staff?.name ?? "", email: staff?.email ?? "", password: "", is_active: staff?.is_active ?? true });
   const [roleIds, setRoleIds] = useState<number[]>(staff?.roles.map((r) => r.id) ?? []);
+  const [resetTwoFactor, setResetTwoFactor] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -143,7 +145,7 @@ function StaffModal({ staff, onClose, onSaved }: { staff: Staff | null; onClose:
     try {
       await api(staff ? `admin/staff/${staff.id}` : "admin/staff", {
         method: staff ? "PUT" : "POST",
-        body: { name: v.name.trim(), email: v.email.trim(), password: v.password || null, is_active: v.is_active, roles: roleIds },
+        body: { name: v.name.trim(), email: v.email.trim(), password: v.password || null, is_active: v.is_active, roles: roleIds, reset_two_factor: resetTwoFactor },
       });
       toast.success(staff ? "Staff account saved" : "Staff account created");
       onSaved();
@@ -189,6 +191,15 @@ function StaffModal({ staff, onClose, onSaved }: { staff: Staff | null; onClose:
           </div>
           {errors.roles && <p className="mt-1 text-xs text-sale">{errors.roles}</p>}
         </fieldset>
+        {staff?.two_factor_enabled && (
+          <label className="flex items-start gap-2 rounded-xl border border-line p-3 text-sm">
+            <input type="checkbox" className="mt-0.5 accent-black" checked={resetTwoFactor} onChange={(e) => setResetTwoFactor(e.target.checked)} />
+            <span>
+              <span className="block font-medium">Reset two-factor authentication</span>
+              <span className="text-xs text-ink/50">For a lost phone. They are signed out and must set 2FA up again.</span>
+            </span>
+          </label>
+        )}
         <label className="flex items-center justify-between text-sm font-medium">
           Active (deactivating signs them out)
           <Toggle label="Active" checked={v.is_active} onChange={(is_active) => setV({ ...v, is_active })} />

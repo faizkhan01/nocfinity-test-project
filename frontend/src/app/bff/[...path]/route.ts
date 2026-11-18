@@ -8,6 +8,7 @@ const LOGIN_ROUTES: Record<string, "customer" | "admin"> = {
   "auth/login": "customer",
   "auth/register": "customer",
   "admin/auth/login": "admin",
+  "admin/auth/two-factor-challenge": "admin",
 };
 
 const LOGOUT_ROUTES: Record<string, "customer" | "admin"> = {
