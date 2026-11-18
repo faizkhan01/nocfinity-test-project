@@ -12,6 +12,7 @@ x-backend: &backend
     MAIL_HOST: mailpit
     MAIL_PORT: 1025
     COMPOSER_HOME: /tmp/composer
+    HOME: /tmp
   depends_on:
     mysql:
       condition: service_healthy
@@ -26,6 +27,7 @@ services:
       MAIL_HOST: mailpit
       MAIL_PORT: 1025
       COMPOSER_HOME: /tmp/composer
+      HOME: /tmp
     healthcheck:
       test: ["CMD", "test", "-f", "storage/framework/.ready"]
       interval: 5s
