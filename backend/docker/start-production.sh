@@ -16,5 +16,9 @@ php artisan migrate --force
 php artisan storage:link > /dev/null 2>&1 || true
 php artisan app:publish-seed-images
 
+if [ "$SCOUT_DRIVER" = "meilisearch" ]; then
+    php artisan scout:sync-index-settings && php artisan scout:import "App\\Models\\Product" || echo "Search index not ready; product search falls back to the database."
+fi
+
 export SERVER_NAME=":${PORT:-8080}"
 exec frankenphp run --config /etc/caddy/Caddyfile

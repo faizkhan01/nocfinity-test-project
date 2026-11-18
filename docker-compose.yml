@@ -1,6 +1,8 @@
 name: nocfinity-shop
 
 x-backend: &backend
+  # One shared image for app, queue and scheduler so they can never drift apart.
+  image: nocfinity-shop-backend:local
   build:
     context: ./backend
   user: "${UID:-1000}:${GID:-1000}"
@@ -13,8 +15,15 @@ x-backend: &backend
     MAIL_PORT: 1025
     COMPOSER_HOME: /tmp/composer
     HOME: /tmp
+    REDIS_HOST: redis
+    MEILISEARCH_HOST: http://meilisearch:7700
+    MEILISEARCH_KEY: local-dev-master-key-change-me
   depends_on:
     mysql:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    meilisearch:
       condition: service_healthy
 
 services:
@@ -28,6 +37,9 @@ services:
       MAIL_PORT: 1025
       COMPOSER_HOME: /tmp/composer
       HOME: /tmp
+      REDIS_HOST: redis
+      MEILISEARCH_HOST: http://meilisearch:7700
+      MEILISEARCH_KEY: local-dev-master-key-change-me
     healthcheck:
       test: ["CMD", "test", "-f", "storage/framework/.ready"]
       interval: 5s
@@ -93,6 +105,33 @@ services:
       timeout: 3s
       retries: 30
 
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.13
+    environment:
+      MEILI_ENV: development
+      MEILI_MASTER_KEY: local-dev-master-key-change-me
+      MEILI_NO_ANALYTICS: "true"
+    ports:
+      - "7700:7700"
+    volumes:
+      - meili-data:/meili_data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:7700/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   mailpit:
     image: axllent/mailpit:latest
     ports:
@@ -101,3 +140,5 @@ services:
 
 volumes:
   mysql-data:
+  redis-data:
+  meili-data:

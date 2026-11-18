@@ -2,17 +2,28 @@
 
 namespace App\Models;
 
+use App\Services\Catalog\CatalogCache;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Scout\Attributes\SearchUsingFullText;
+use Laravel\Scout\Attributes\SearchUsingPrefix;
+use Laravel\Scout\Searchable;
 
 class Product extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, Searchable, SoftDeletes;
+
+    /** Fields that feed the search index; changes to anything else (e.g. stock) skip re-indexing. */
+    private const SEARCH_FIELDS = ['name', 'sku', 'short_description', 'description', 'category_id', 'colors', 'style', 'is_active'];
+
+    /** Fields shown in the cached filter facets. */
+    private const FACET_FIELDS = ['colors', 'sizes', 'style', 'price_cents', 'discount_price_cents', 'is_active', 'category_id'];
 
     protected $fillable = [
         'category_id', 'name', 'slug', 'sku', 'short_description', 'description',
@@ -37,6 +48,63 @@ class Product extends Model
             'rating_count' => 'integer',
             'sold_count' => 'integer',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::created(fn () => CatalogCache::flush());
+        static::updated(fn (self $product) => $product->wasChanged(self::FACET_FIELDS) && CatalogCache::flush());
+        static::deleted(fn () => CatalogCache::flush());
+        static::restored(fn () => CatalogCache::flush());
+    }
+
+    public function searchableAs(): string
+    {
+        return 'products';
+    }
+
+    /** Inactive or deleted products never enter the index; MySQL filters remain the source of truth anyway. */
+    public function shouldBeSearchable(): bool
+    {
+        return $this->is_active && ! $this->trashed();
+    }
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        // A fresh insert has no recorded changes; later saves on the same instance do.
+        return ($this->wasRecentlyCreated && $this->getChanges() === []) || $this->wasChanged(self::SEARCH_FIELDS);
+    }
+
+    #[SearchUsingFullText(['name', 'short_description', 'description'])]
+    #[SearchUsingPrefix(['sku'])]
+    public function toSearchableArray(): array
+    {
+        // The database driver queries these keys as columns, so it only gets real columns.
+        if (config('scout.driver') === 'database') {
+            return $this->only('name', 'short_description', 'description', 'sku');
+        }
+
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'sku' => $this->sku,
+            'category' => $this->category?->name,
+            'short_description' => $this->short_description,
+            'description' => $this->description,
+            'colors' => array_column($this->colors ?? [], 'name'),
+            'style' => $this->style,
+        ];
+    }
+
+    protected function makeAllSearchableUsing(Builder $query): Builder
+    {
+        return $query->with('category');
+    }
+
+    /** Queued indexing jobs rebuild models without relations; load the one the document needs. */
+    public function makeSearchableUsing(EloquentCollection $models): EloquentCollection
+    {
+        return $models->loadMissing('category');
     }
 
     public function category(): BelongsTo

@@ -6,11 +6,14 @@ use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class ProductSearch
 {
-    /** Whitelisted sorts: key => [column, direction]. */
+    /** Whitelisted sorts: key => [column, direction]; "relevance" follows the search engine's ranking. */
     public const SORTS = [
+        'relevance' => [null, null],
         'newest' => ['created_at', 'desc'],
         'price_asc' => ['effective_price_cents', 'asc'],
         'price_desc' => ['effective_price_cents', 'desc'],
@@ -18,28 +21,66 @@ class ProductSearch
         'rating' => ['rating_avg', 'desc'],
     ];
 
+    private const MAX_SEARCH_HITS = 500;
+
     public const SIZE_ORDER = ['XX-Small', 'X-Small', 'Small', 'Medium', 'Large', 'X-Large', 'XX-Large', '3X-Large', '4X-Large'];
 
     /** @param array<string, mixed> $filters */
     public function paginate(array $filters): LengthAwarePaginator
     {
-        [$column, $direction] = self::SORTS[$filters['sort'] ?? 'newest'];
+        $hits = ! empty($filters['search']) ? $this->searchIds($filters['search']) : null;
+        $sort = $filters['sort'] ?? ($hits !== null ? 'relevance' : 'newest');
+        $query = $this->query($filters, $hits)->with(['primaryImage', 'category:id,name,slug']);
 
-        return $this->query($filters)
-            ->with(['primaryImage', 'category:id,name,slug'])
-            ->orderBy($column, $direction)
-            ->orderBy('id', 'desc')
+        if ($sort === 'relevance' && $hits) {
+            // Ids come from the engine as integers, so inlining them into FIELD() is safe.
+            $query->orderByRaw('FIELD(products.id, '.implode(',', array_map('intval', $hits)).')');
+        } else {
+            [$column, $direction] = self::SORTS[$sort === 'relevance' ? 'newest' : $sort];
+            $query->orderBy($column, $direction);
+        }
+
+        return $query->orderBy('id', 'desc')
             ->paginate((int) ($filters['per_page'] ?? 9))
             ->withQueryString();
     }
 
+    /**
+     * Matching product ids in relevance order from the configured Scout engine,
+     * or null when the engine is unavailable (the caller then falls back to LIKE).
+     *
+     * @return list<int>|null
+     */
+    public function searchIds(string $search): ?array
+    {
+        // An exact SKU is a lookup, not a fuzzy search ("SC-0009" would otherwise match every "SC-" SKU).
+        if (preg_match('/^[a-z0-9]+(-[a-z0-9]+)+$/i', trim($search))) {
+            $id = Product::active()->where('sku', strtoupper(trim($search)))->value('id');
+
+            if ($id) {
+                return [(int) $id];
+            }
+        }
+
+        try {
+            return Product::search($search)->take(self::MAX_SEARCH_HITS)->keys()->map(fn ($id) => (int) $id)->values()->all();
+        } catch (Throwable $e) {
+            Log::warning('Product search engine unavailable, falling back to LIKE', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
     /** @param array<string, mixed> $filters */
-    public function query(array $filters): Builder
+    /** @param array<string, mixed> $filters @param list<int>|null $hits ids from the search engine */
+    public function query(array $filters, ?array $hits = null): Builder
     {
         return Product::query()
             ->active()
             ->whereHas('category', fn (Builder $q) => $q->active())
-            ->when($filters['search'] ?? null, function (Builder $q, string $search) {
+            ->when($hits !== null, fn (Builder $q) => $q->whereIn('products.id', $hits ?: [0]))
+            ->when($hits === null && ! empty($filters['search']), function (Builder $q) use ($filters) {
+                $search = $filters['search'];
                 $term = '%'.addcslashes($search, '%_\\').'%';
                 $q->where(fn (Builder $q) => $q->where('name', 'like', $term)
                     ->orWhere('short_description', 'like', $term)
@@ -69,6 +110,11 @@ class ProductSearch
 
     /** Values the filter sidebar can offer, computed from the active catalog. */
     public function facets(): array
+    {
+        return CatalogCache::remember(CatalogCache::FACETS, fn () => $this->computeFacets());
+    }
+
+    private function computeFacets(): array
     {
         $products = Product::active()->get(['colors', 'sizes', 'style', 'effective_price_cents']);
 

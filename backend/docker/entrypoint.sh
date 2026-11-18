@@ -15,6 +15,10 @@ if [ "$CONTAINER_ROLE" = "app" ]; then
     php artisan migrate --force
     [ "$(php artisan app:is-seeded)" = "yes" ] || php artisan db:seed --force
     php artisan storage:link > /dev/null 2>&1 || true
+
+    if [ "${SCOUT_DRIVER:-$(grep -E '^SCOUT_DRIVER=' .env | cut -d= -f2)}" = "meilisearch" ]; then
+        php artisan scout:sync-index-settings && php artisan scout:import "App\\Models\\Product" || echo "Search index not ready; product search falls back to the database."
+    fi
     touch storage/framework/.ready
 fi
 
