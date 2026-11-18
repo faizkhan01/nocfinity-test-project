@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Catalog\CatalogCache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,12 @@ class Category extends Model
     protected function casts(): array
     {
         return ['is_active' => 'boolean', 'sort_order' => 'integer'];
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => CatalogCache::flush());
+        static::deleted(fn () => CatalogCache::flush());
     }
 
     public function parent(): BelongsTo

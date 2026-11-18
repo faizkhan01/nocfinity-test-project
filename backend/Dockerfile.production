@@ -1,7 +1,7 @@
 # Production image (Railway or any container host): FrankenPHP serves Laravel on $PORT.
 FROM dunglas/frankenphp:1-php8.4-alpine
 
-RUN install-php-extensions pdo_mysql bcmath intl zip gd exif pcntl opcache \
+RUN install-php-extensions pdo_mysql bcmath intl zip gd exif pcntl opcache redis \
     && printf "opcache.enable=1\nopcache.validate_timestamps=0\nexpose_php=Off\nupload_max_filesize=10M\npost_max_size=60M\n" > "$PHP_INI_DIR/conf.d/production.ini"
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer

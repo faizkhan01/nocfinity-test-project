@@ -34,6 +34,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'active' => EnsureUserIsActive::class,
         ]);
         // Check permissions before route-model binding, so unauthorized staff get 403 rather than learning what exists.
+        // Atomic Redis-backed limiter for the throttle middleware when Redis is the cache store.
+        if (env('CACHE_STORE') === 'redis') {
+            $middleware->throttleWithRedis();
+        }
         $middleware->prependToPriorityList(SubstituteBindings::class, EnsureUserIsActive::class);
         $middleware->prependToPriorityList(SubstituteBindings::class, EnsurePermission::class);
     })
