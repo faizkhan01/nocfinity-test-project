@@ -178,7 +178,7 @@ function StaffModal({ staff, onClose, onSaved }: { staff: Staff | null; onClose:
               <label key={r.id} className="flex items-start gap-2 rounded-xl border border-line p-3">
                 <input
                   type="checkbox"
-                  className="mt-0.5 accent-black"
+                  className="mt-0.5 accent-ink"
                   checked={roleIds.includes(r.id)}
                   onChange={() => setRoleIds((ids) => (ids.includes(r.id) ? ids.filter((x) => x !== r.id) : [...ids, r.id]))}
                 />
@@ -193,7 +193,7 @@ function StaffModal({ staff, onClose, onSaved }: { staff: Staff | null; onClose:
         </fieldset>
         {staff?.two_factor_enabled && (
           <label className="flex items-start gap-2 rounded-xl border border-line p-3 text-sm">
-            <input type="checkbox" className="mt-0.5 accent-black" checked={resetTwoFactor} onChange={(e) => setResetTwoFactor(e.target.checked)} />
+            <input type="checkbox" className="mt-0.5 accent-ink" checked={resetTwoFactor} onChange={(e) => setResetTwoFactor(e.target.checked)} />
             <span>
               <span className="block font-medium">Reset two-factor authentication</span>
               <span className="text-xs text-ink/50">For a lost phone. They are signed out and must set 2FA up again.</span>

@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AdminShell } from "@/components/admin/sidebar";
 import { StaffProvider } from "@/components/admin/staff-context";
+import { AdminThemeRoot } from "@/components/admin/theme-toggle";
+import { ADMIN_THEME_COOKIE, parseAdminTheme } from "@/lib/admin-theme";
 import { apiGet } from "@/lib/api/server";
 import { ApiError } from "@/lib/api/errors";
 import type { Staff } from "@/lib/types";
@@ -16,10 +19,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       if (error instanceof ApiError && (error.status === 401 || error.status === 403)) redirect("/admin/login");
       throw error;
     });
+  const theme = parseAdminTheme((await cookies()).get(ADMIN_THEME_COOKIE)?.value);
 
   return (
     <StaffProvider staff={staff}>
-      <AdminShell>{children}</AdminShell>
+      <AdminThemeRoot initial={theme} className="min-h-dvh">
+        <AdminShell>{children}</AdminShell>
+      </AdminThemeRoot>
     </StaffProvider>
   );
 }

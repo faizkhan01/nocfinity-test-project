@@ -13,12 +13,52 @@
   --color-star: #ffc633;
   --color-success: #01ab31;
   --color-line: rgb(0 0 0 / 0.1);
+  --color-canvas: #f7f7f7;
 
   --radius-pill: 62px;
   --radius-card: 20px;
   --radius-panel: 40px;
 
   --container-shop: 1240px;
+}
+
+/* Admin dark mode: the admin root carries data-theme="light|dark|system"; the storefront never sets it. */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where([data-theme="system"], [data-theme="system"] *) {
+      @slot;
+    }
+  }
+}
+
+/* Re-pointing the tokens inverts every token-based utility (bg-white, text-ink, border-line...) at once. */
+@layer base {
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --color-white: #18181b;
+    --color-ink: #ececee;
+    --color-surface: #26262b;
+    --color-product: #2d2d33;
+    --color-canvas: #0f0f12;
+    --color-line: rgb(255 255 255 / 0.12);
+    --color-sale: #ff6b6b;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    [data-theme="system"] {
+      color-scheme: dark;
+      --color-white: #18181b;
+      --color-ink: #ececee;
+      --color-surface: #26262b;
+      --color-product: #2d2d33;
+      --color-canvas: #0f0f12;
+      --color-line: rgb(255 255 255 / 0.12);
+      --color-sale: #ff6b6b;
+    }
+  }
 }
 
 @utility font-heading {

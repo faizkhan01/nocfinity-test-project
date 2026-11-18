@@ -131,7 +131,7 @@ export function RolesMatrix() {
                 Permission
               </th>
               {list.map((role) => (
-                <th key={role.id} scope="col" className={cn("px-3 py-4 text-center align-bottom", drafts[role.id] && "bg-amber-50")}>
+                <th key={role.id} scope="col" className={cn("px-3 py-4 text-center align-bottom", drafts[role.id] && "bg-amber-50 dark:bg-amber-400/10")}>
                   <div className="flex flex-col items-center gap-1">
                     <span className="flex items-center gap-1 font-bold">
                       {role.is_super_admin && <Lock className="size-3.5" />}
@@ -181,10 +181,10 @@ export function RolesMatrix() {
                     {list.map((role) => {
                       const checked = role.is_super_admin || current[role.id]?.has(p.name);
                       return (
-                        <td key={role.id} className={cn("px-3 py-2.5 text-center", drafts[role.id] && "bg-amber-50/60")}>
+                        <td key={role.id} className={cn("px-3 py-2.5 text-center", drafts[role.id] && "bg-amber-50/60 dark:bg-amber-400/5")}>
                           <input
                             type="checkbox"
-                            className="size-4 cursor-pointer accent-black disabled:cursor-not-allowed"
+                            className="size-4 cursor-pointer accent-ink disabled:cursor-not-allowed"
                             aria-label={`${role.name}: ${p.description}`}
                             checked={checked}
                             disabled={!editable || role.is_super_admin}

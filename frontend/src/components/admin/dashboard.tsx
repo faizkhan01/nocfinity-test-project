@@ -73,18 +73,19 @@ export function DashboardView() {
               <AreaChart data={chart} margin={{ left: 0, right: 8, top: 8 }}>
                 <defs>
                   <linearGradient id="revenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#000" stopOpacity={0.18} />
-                    <stop offset="100%" stopColor="#000" stopOpacity={0} />
+                    <stop offset="0%" stopColor="var(--color-ink)" stopOpacity={0.18} />
+                    <stop offset="100%" stopColor="var(--color-ink)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.08)" />
-                <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} interval={4} />
-                <YAxis tickLine={false} axisLine={false} fontSize={12} width={56} tickFormatter={(v) => `$${v}`} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-line)" />
+                <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} interval={4} tick={{ fill: "var(--color-ink)", opacity: 0.6 }} />
+                <YAxis tickLine={false} axisLine={false} fontSize={12} width={56} tick={{ fill: "var(--color-ink)", opacity: 0.6 }} tickFormatter={(v) => `$${v}`} />
                 <Tooltip
+                  contentStyle={{ background: "var(--color-white)", border: "1px solid var(--color-line)", borderRadius: 12, color: "var(--color-ink)" }}
                   formatter={(value: number, name) => (name === "revenue" ? [money(value * 100), "Revenue"] : [value, "Orders"])}
                   labelFormatter={(_, payload) => (payload?.[0] ? formatDate(payload[0].payload.date) : "")}
                 />
-                <Area type="monotone" dataKey="revenue" stroke="#000" strokeWidth={2} fill="url(#revenue)" />
+                <Area type="monotone" dataKey="revenue" stroke="var(--color-ink)" strokeWidth={2} fill="url(#revenue)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>

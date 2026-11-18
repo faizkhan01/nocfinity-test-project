@@ -144,7 +144,7 @@ export function TwoFactorCard() {
       {step === "scan" && setup && (
         <div className="grid gap-6 sm:grid-cols-[200px_1fr]">
           {/* eslint-disable-next-line @next/next/no-img-element -- server-rendered QR data URI */}
-          <img src={setup.qr_code} alt="QR code to add this account to your authenticator app" width={200} height={200} className="rounded-xl bg-white p-2" />
+          <img src={setup.qr_code} alt="QR code to add this account to your authenticator app" width={200} height={200} className="rounded-xl bg-[#fff] p-2" />
           <form
             className="flex flex-col gap-3"
             onSubmit={(e) => {
@@ -183,7 +183,7 @@ export function TwoFactorCard() {
 
       {step === "codes" && (
         <div className="flex flex-col gap-3">
-          <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+          <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-400/10 dark:text-amber-200">
             Save these recovery codes somewhere safe. Each one signs you in once if you lose your phone. They won&apos;t be shown again.
           </p>
           <ul className="grid grid-cols-2 gap-2 rounded-xl bg-surface p-4 font-mono text-sm sm:grid-cols-4">

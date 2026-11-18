@@ -23,6 +23,7 @@ import { useState } from "react";
 import { api } from "@/lib/api/client";
 import { cn } from "@/lib/format";
 import { useCan, useStaff } from "./staff-context";
+import { ThemeToggle } from "./theme-toggle";
 
 type NavItem = { href: string; label: string; icon: LucideIcon; permission: string[] };
 
@@ -44,14 +45,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const staff = useStaff();
 
   return (
-    <div className="min-h-dvh bg-surface/50 lg:flex">
+    <div className="min-h-dvh lg:flex">
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 border-r border-line bg-white lg:block">
         <SidebarContent />
       </aside>
 
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
-          <div className="absolute inset-0 bg-ink/40" onClick={() => setOpen(false)} />
+          <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
           <aside className="absolute inset-y-0 left-0 w-72 bg-white">
             <button type="button" onClick={() => setOpen(false)} className="absolute right-3 top-4 p-1" aria-label="Close navigation">
               <X className="size-5" />
@@ -67,7 +68,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <Menu className="size-6" />
           </button>
           <span className="font-heading text-xl lg:hidden">SHOP.CO</span>
-          <Link href="/admin/profile" className="ml-auto flex items-center gap-3 rounded-full py-1 pl-1 pr-3 hover:bg-surface">
+          <ThemeToggle className="ml-auto mr-2 hidden sm:inline-flex" />
+          <Link href="/admin/profile" className="flex items-center gap-3 rounded-full py-1 pl-1 pr-3 hover:bg-surface max-sm:ml-auto">
             <span className="grid size-9 place-items-center rounded-full bg-ink text-sm font-bold text-white">{staff.name.charAt(0).toUpperCase()}</span>
             <span className="hidden text-left text-sm leading-tight sm:block">
               <span className="block font-medium">{staff.name}</span>
@@ -116,6 +118,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         );
       })}
       <div className="mt-auto flex flex-col gap-1 border-t border-line pt-4">
+        <ThemeToggle className="mx-3 mb-2 self-start sm:hidden" />
         <Link href="/" target="_blank" className="rounded-xl px-3 py-2 text-sm text-ink/60 hover:bg-surface">
           View storefront ↗
         </Link>

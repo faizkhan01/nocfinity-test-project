@@ -76,7 +76,7 @@ export function Modal({ title, open, onClose, children, wide }: { title: string;
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:items-center" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="fixed inset-0 bg-ink/40" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <div className={cn("relative my-8 w-full rounded-2xl bg-white p-6 shadow-xl", wide ? "max-w-3xl" : "max-w-lg")}>
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-lg font-bold">{title}</h2>
@@ -134,10 +134,10 @@ export function Toggle({ checked, onChange, label, disabled }: { checked: boolea
 export function Badge({ tone = "neutral", children }: { tone?: "neutral" | "green" | "red" | "amber" | "blue"; children: React.ReactNode }) {
   const tones = {
     neutral: "bg-surface text-ink/70",
-    green: "bg-emerald-100 text-emerald-800",
-    red: "bg-rose-100 text-rose-800",
-    amber: "bg-amber-100 text-amber-800",
-    blue: "bg-sky-100 text-sky-800",
+    green: "bg-emerald-100 text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-300",
+    red: "bg-rose-100 text-rose-800 dark:bg-rose-400/15 dark:text-rose-300",
+    amber: "bg-amber-100 text-amber-800 dark:bg-amber-400/15 dark:text-amber-300",
+    blue: "bg-sky-100 text-sky-800 dark:bg-sky-400/15 dark:text-sky-300",
   };
   return <span className={cn("inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium", tones[tone])}>{children}</span>;
 }
