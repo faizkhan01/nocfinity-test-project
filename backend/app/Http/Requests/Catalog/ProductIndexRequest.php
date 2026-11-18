@@ -24,7 +24,7 @@ class ProductIndexRequest extends FormRequest
             'search' => ['nullable', 'string', 'max:100'],
             'category' => ['nullable', 'string', 'max:120'],
             'min_price' => ['nullable', 'integer', 'min:0'],
-            'max_price' => ['nullable', 'integer', 'min:0', 'gte:min_price'],
+            'max_price' => ['nullable', 'integer', 'min:0', ...($this->filled('min_price') ? ['gte:min_price'] : [])],
             'colors' => ['nullable', 'array', 'max:20'],
             'colors.*' => ['string', 'max:40'],
             'sizes' => ['nullable', 'array', 'max:20'],
