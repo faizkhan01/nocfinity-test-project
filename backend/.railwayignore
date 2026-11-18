@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+vendor
+node_modules
+public/storage
+storage/logs/*
+storage/app/public/*
+storage/framework/cache/*
+storage/framework/views/*
+storage/framework/.ready
+bootstrap/cache/*.php
