@@ -14,7 +14,7 @@ function contentSecurityPolicy(nonce: string): string {
     "img-src 'self' data: blob: https://*.stripe.com",
     "font-src 'self'",
     `connect-src 'self' https://api.stripe.com https://r.stripe.com${dev ? " ws: wss:" : ""}`,
-    "frame-src https://js.stripe.com https://hooks.stripe.com",
+    "frame-src https://js.stripe.com https://hooks.stripe.com https://m.stripe.network",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
