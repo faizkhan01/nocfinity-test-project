@@ -14,6 +14,7 @@ fi
 php artisan migrate --force
 [ "$(php artisan app:is-seeded)" = "yes" ] || php artisan db:seed --force
 php artisan storage:link > /dev/null 2>&1 || true
+php artisan app:publish-seed-images
 
 export SERVER_NAME=":${PORT:-8080}"
 exec frankenphp run --config /etc/caddy/Caddyfile
