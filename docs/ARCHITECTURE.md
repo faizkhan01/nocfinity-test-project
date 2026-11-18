@@ -37,6 +37,19 @@ Controllers validate input with a FormRequest, call a service and return an API 
   - The guest cart token is handled the same way.
 - **CSRF.** Mutating `/bff` requests must carry an `Origin` matching the host, on top of `SameSite=Lax` cookies. The Laravel API itself is stateless (bearer tokens only), so it needs no CSRF tokens.
 
+## Two-factor authentication (staff)
+
+- **Setup:** from the admin profile, with the password confirmed first. The server generates a TOTP secret and renders the QR code itself, so the secret never goes to a third-party QR service. Confirming a code turns 2FA on and returns 8 recovery codes once; they are stored as SHA-256 hashes.
+- **Login:** a correct password returns a random, single-use **challenge** (cached for 5 minutes, max 5 wrong codes), never a token. The token is issued only after a valid TOTP code (±1 time step for clock drift) or an unused recovery code.
+- **Replay protection:** the last accepted time step is stored, so the same code can't be used twice.
+- **Changes:** disabling 2FA or regenerating codes needs the password. A staff manager can reset a colleague's 2FA (lost phone); that also revokes all of their tokens.
+
+## Admin theme
+
+- **Dark mode** works by re-pointing the design tokens (`--color-white`, `--color-ink`, `--color-surface`…) under `[data-theme="dark"]`, so every token-based utility switches at once. A `dark:` variant covers the few fixed colours, such as status badges.
+- **Preference:** stored in a cookie and applied by the server-rendered layout, so there's no flash on load. "System" follows `prefers-color-scheme`.
+- **Storefront:** never sets `data-theme`, so it's unaffected.
+
 ## Role-based access control
 
 - **Schema:**
@@ -106,7 +119,7 @@ Staff can never set `paid` by hand. Cancelling a paid order restores stock (unde
 
 ## What I would improve with more time
 
-- **2FA (TOTP) for staff,** using the columns that already exist, plus a re-authentication prompt for sensitive admin actions.
+- **Re-authentication** prompt for sensitive admin actions, and optionally *requiring* 2FA for selected roles.
 - **Product variants:** stock per colour and size instead of per product. The design's selectors suggest it; the brief asked for product-level stock.
 - **Infrastructure:**
   - Redis for cache, queue and rate limiting.
@@ -116,4 +129,4 @@ Staff can never set `paid` by hand. Cancelling a paid order restores stock (unde
 - **Tests and CI:**
   - Frontend unit tests, and Playwright end-to-end tests in CI (the flows were run manually here).
   - Static analysis (Larastan is installed but not yet tuned) and a CI pipeline.
-- **Accessibility:** an audit, and an admin dark mode.
+- **Accessibility:** a full audit, and a dark theme for the storefront (the admin has one).

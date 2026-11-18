@@ -11,6 +11,17 @@ A full-stack store built from the Figma *E-commerce Website Template* (SHOP.CO):
 | Web | Next.js 15 (App Router) + TypeScript + Tailwind CSS v4, TanStack Query, Stripe Elements |
 | Infra | Docker Compose: php-fpm, nginx, MySQL, queue worker, scheduler, Mailpit, Next.js |
 
+## Live demo
+
+| | URL |
+| --- | --- |
+| Storefront | https://nocfinity-shop.vercel.app |
+| Admin panel | https://nocfinity-shop.vercel.app/admin |
+| REST API | https://api-production-c1887df3.up.railway.app/api/v1 |
+| Mailpit (demo inbox, password-protected) | https://mailpit-production-c1dd5411.up.railway.app |
+
+The demo accounts below work on the live site too. Payments run in Stripe **test mode**, so use the test cards.
+
 More detail lives in two companion documents:
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): how totals, stock and RBAC are secured.
 - [docs/API.md](docs/API.md): the API reference.
@@ -125,7 +136,7 @@ stripe listen --forward-to localhost:8000/api/v1/webhooks/stripe
 docker compose exec app php artisan test
 ```
 
-There are 32 feature tests. They run against a separate MySQL database (`shop_testing`) with a fake payment gateway, and cover:
+There are 38 feature tests. They run against a separate MySQL database (`shop_testing`) with a fake payment gateway, and cover:
 - **Checkout and money:** the full flow, ignoring client-sent prices and totals, overselling while a payment is in flight, declined cards, amount mismatches, idempotent capture, expired coupons and coupon usage limits under concurrency, and refunds with stock restored on cancel.
 - **Access and security:** IDOR, login lockout, customer/admin guard separation, permission middleware, Super Admin protections and catalog filters.
 - **Admin smoke test:** every admin read endpoint is rendered against the full seed data.
@@ -138,6 +149,7 @@ The frontend is type-checked and linted with `npm run lint` and `npx tsc --noEmi
 
 **Admin:**
 - Dashboard (stat cards, 30-day sales chart, recent orders, low stock).
+- Optional two-factor sign in (TOTP + recovery codes) and a light/dark/system theme.
 - Products (multi-image, prices, discount, stock, SKU, category, active toggle).
 - Two-level categories, and orders (filters, detail, status actions).
 - Coupons, customers with order history, and the roles and permission matrix.
@@ -161,9 +173,35 @@ The frontend is type-checked and linted with `npm run lint` and `npx tsc --noEmi
 | Product reviews and ratings | ✅ verified buyers only, with moderation |
 | Email verification | ✅ signed link, resend from the account page |
 | Activity log | ✅ |
-| 2FA (TOTP) for admins | ❌ Skipped. The schema already has `two_factor_secret` / `two_factor_confirmed_at`. I'd add `pragmarx/google2fa` with a two-step admin login (password → short-lived challenge token → TOTP code) and recovery codes. I prioritised correctness of money, stock and RBAC over it. |
-| Admin dark mode | ❌ Skipped. Not in the design, and lower value than the core rules. Tokens are centralised, so it's mostly a second token set. |
-| Live deployment | ❌ Skipped. It would need hosting accounts and secrets I shouldn't create on someone else's behalf. The production Docker images are ready for it. |
+| 2FA (TOTP) for admins | ✅ Set up from **Profile**: QR code, confirm a code, 8 single-use recovery codes. Login then needs the code, with replay protection and an attempt limit; staff managers can reset a colleague's 2FA. |
+| Admin dark mode | ✅ Light / Dark / System toggle in the admin header, rendered on the server from a cookie so there is no flash. |
+| Live deployment | ✅ Storefront on Vercel; API, queue worker, MySQL and a password-protected Mailpit on Railway (see [Deployment](#deployment)). |
+
+## Deployment
+
+The live demo runs on two platforms.
+
+**Railway** (`nocfinity-shop` project):
+- **`api`:** `backend/Dockerfile.production`. FrankenPHP on `$PORT`; caches config and routes, migrates, seeds an empty database and publishes the demo images on boot. A persistent volume is mounted at `/app/storage/app/public` for uploads.
+- **`worker`:** the same image with `CONTAINER_ROLE=worker`. Runs `queue:work` (emails) and the scheduler (expiring unpaid orders, pruning guest carts).
+- **`MySQL`:** Railway's managed MySQL, wired in with `DB_URL=${{MySQL.MYSQL_URL}}`.
+- **`mailpit`:** the demo inbox, behind basic auth (`MP_UI_AUTH`).
+
+**Vercel** (`nocfinity-shop`): the Next.js app, with `API_URL` pointing at the Railway API. `/storage/*` is rewritten to the API, so images stay same-origin.
+
+To redeploy after changes:
+
+```bash
+# API and worker (deploy a clean export so only committed files are uploaded)
+git archive HEAD backend | tar -x -C /tmp/deploy
+npx @railway/cli up /tmp/deploy/backend --path-as-root --service api
+npx @railway/cli up /tmp/deploy/backend --path-as-root --service worker
+
+# Frontend
+cd frontend && npx vercel deploy --prod
+```
+
+Production uses `TRUSTED_PROXIES=*`, because the platforms' proxy addresses aren't fixed. Per-IP rate limits then rely on the edge's `X-Forwarded-For`; the per-email login lockout is unaffected.
 
 ## Design notes
 
