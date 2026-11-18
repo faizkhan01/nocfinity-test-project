@@ -20,5 +20,5 @@ const LABELS: Record<OrderStatus, string> = {
 };
 
 export function StatusBadge({ status, className }: { status: OrderStatus; className?: string }) {
-  return <span className={cn("inline-flex rounded-pill px-3 py-1 text-xs font-medium", STYLES[status], className)}>{LABELS[status]}</span>;
+  return <span className={cn("inline-flex whitespace-nowrap rounded-pill px-3 py-1 text-xs font-medium", STYLES[status], className)}>{LABELS[status]}</span>;
 }
