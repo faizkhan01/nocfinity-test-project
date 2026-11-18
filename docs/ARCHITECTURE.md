@@ -103,6 +103,38 @@ Staff can never set `paid` by hand. Cancelling a paid order restores stock (unde
 
 **Order numbers** are `ORD-{year}-{id padded to 6}`. They're derived from the auto-increment ID, so they're unique without a separate counter.
 
+## Search
+
+- **Engine:** Laravel Scout indexes active products in **Meilisearch** (typo-tolerant: "jens" finds jeans, "chekered shrt" finds Checkered Shirt). Name, SKU, category, colours, style and descriptions are indexed, in that order of weight.
+- **Filters stay in MySQL:** the engine only returns matching IDs in relevance order. Price, colour, size, stock, visibility and category filters are then applied in MySQL, which stays the source of truth, so a stale index can never show a hidden or deleted product.
+- **Indexing:** runs through the Redis queue, and only when a searchable field changes. A stock change from an order doesn't re-index.
+- **Sorting:** searches sort by relevance ("Best Match") unless the shopper picks another order.
+- **SKUs:** an exact SKU (`SC-0009`) is a direct database lookup, not a fuzzy search.
+- **Fallbacks:**
+  - Without Meilisearch, `SCOUT_DRIVER=database` uses a MySQL **FULLTEXT** index (`MATCH … AGAINST`) plus a SKU prefix match. Production runs this way on the Railway free plan.
+  - If the engine is unreachable, search degrades to a SQL `LIKE` query instead of failing.
+
+## Redis
+
+- **Queue:** emails, search indexing.
+- **Cache:** the storefront category tree and filter facets. Both are flushed by model events when a category, or a product's facet fields, change; a stock change doesn't flush them.
+- **Rate limits and lockouts:** login lockouts, 2FA challenges and the API, auth and checkout limits all count in Redis using atomic increments.
+- **Databases:** Laravel keeps the queue in Redis database 0 and the cache in database 1.
+
+## Visitor IP (rate limits and lockouts)
+
+Rate limits and login lockouts are keyed by IP, so the API must see the real visitor and not a proxy. There are two cases:
+
+- **Through the Next.js BFF** (all shopper traffic):
+  - The BFF sends the visitor's IP in `X-Client-IP`, together with `X-BFF-Secret`, a secret only the Next.js server and the API know.
+  - The API believes `X-Client-IP` only when the secret matches.
+  - Without this, every shopper would appear as one of Vercel's few server IPs and share a single login limit.
+- **Direct API calls behind Railway:** the API uses `X-Real-IP`, which Railway's edge overwrites with the connecting address. It's trusted only when the request comes from Railway's internal proxy range (`TRUSTED_PROXIES=100.64.0.0/10`).
+
+Forged headers without the secret are ignored, so a client can't rotate fake IPs to escape a lockout. Tests cover all three cases.
+
+Trusted proxies are read from config **at request time**. An earlier version read `env()` while handling requests, and once config was cached in production that silently returned the defaults, so the lockout never triggered. A regression test now covers it.
+
 ## Other security measures
 
 - **IDOR:** customer order routes resolve through `$request->user()->orders()`, so another customer's order number is a 404. The same applies to cart item IDs.
@@ -115,16 +147,16 @@ Staff can never set `paid` by hand. Cancelling a paid order restores stock (unde
   - **Next.js:** a per-request nonce-based CSP allowing only Stripe as a third party, plus the same frame, sniffing and referrer headers.
 - **Responses** are whitelisted API Resources: no password hashes, tokens, Stripe secrets or internal flags. Production errors are generic, and model class names never leak through 404s.
 - **Open redirects:** `?next=` only accepts same-site paths.
-- **Rate limits:** auth routes, checkout and the API overall are rate-limited. The proxy's forwarded client IP is used, but only from trusted proxies.
+- **Rate limits:** auth routes (10/min), checkout (10/min) and the API overall (120/min) are rate-limited per visitor IP (see above).
+- **Lost 2FA:** `php artisan app:reset-two-factor <email>` is a server-side break-glass for staff (including a Super Admin) who lose both their authenticator and recovery codes. On hosts without a shell, `RESET_TWO_FACTOR_FOR=<email>` runs it once at boot; remove it afterwards.
 
 ## What I would improve with more time
 
 - **Re-authentication** prompt for sensitive admin actions, and optionally *requiring* 2FA for selected roles.
 - **Product variants:** stock per colour and size instead of per product. The design's selectors suggest it; the brief asked for product-level stock.
 - **Infrastructure:**
-  - Redis for cache, queue and rate limiting.
-  - Object storage (S3) for uploads, with image resizing.
-  - Full-text or Meilisearch product search.
+  - Object storage (S3 or Cloudflare R2) for uploads, with image resizing.
+  - Meilisearch in production too (it needs a paid Railway plan; the code switches with `SCOUT_DRIVER`).
 - **Webhook event table:** record processed Stripe event IDs, and add a reconciliation job for intents authorized but never finalized (for example if the browser closes and webhooks are off).
 - **Tests and CI:**
   - Frontend unit tests, and Playwright end-to-end tests in CI (the flows were run manually here).

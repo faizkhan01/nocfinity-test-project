@@ -9,7 +9,7 @@ A full-stack store built from the Figma *E-commerce Website Template* (SHOP.CO):
 | --- | --- |
 | API | Laravel 12 (PHP 8.4), Sanctum bearer tokens, MySQL 8, Stripe PHP SDK |
 | Web | Next.js 15 (App Router) + TypeScript + Tailwind CSS v4, TanStack Query, Stripe Elements |
-| Infra | Docker Compose: php-fpm, nginx, MySQL, queue worker, scheduler, Mailpit, Next.js |
+| Infra | Docker Compose: php-fpm, nginx, MySQL, **Redis** (cache, queue, rate limits), **Meilisearch** (product search), queue worker, scheduler, Mailpit, Next.js |
 
 ## Live demo
 
@@ -48,6 +48,7 @@ The first boot installs Composer packages, generates the app key, runs migration
 | http://localhost:3000/admin | Admin panel |
 | http://localhost:8000/api/v1 | REST API |
 | http://localhost:8025 | Mailpit (every email the app sends: verification, password reset, order updates) |
+| http://localhost:7700 | Meilisearch (search engine; master key in `docker-compose.yml`) |
 
 To reset everything to fresh seed data:
 
@@ -77,7 +78,11 @@ cd frontend && cp .env.example .env.local && npm install && npm run dev
 | `SHOP_SHIPPING_FLAT_CENTS`, `SHOP_FREE_SHIPPING_MIN_CENTS` | Delivery fee rules (default: flat $15). |
 | `SHOP_PENDING_ORDER_TTL` | Minutes before an unpaid order is cancelled and its payment voided (default 60). |
 | `SUPER_ADMIN_EMAIL`, `SUPER_ADMIN_PASSWORD` | The seeded Super Admin account. |
-| `TRUSTED_PROXIES` | Proxies allowed to set `X-Forwarded-For` (defaults to private ranges, so the Next.js proxy's client IP is used for rate limiting). |
+| `TRUSTED_PROXIES` | Proxies allowed to set `X-Forwarded-*` (defaults to private ranges). |
+| `BFF_SHARED_SECRET` | Shared with the Next.js server so the API believes the visitor IP it forwards (set the same value on both sides). |
+| `CLIENT_IP_HEADER` | Behind an edge that overwrites a client-IP header (Railway: `X-Real-IP`), name it here. |
+| `CACHE_STORE`, `QUEUE_CONNECTION`, `REDIS_*` | Redis for cache, queue and rate limits (defaults in `.env.example`). |
+| `SCOUT_DRIVER`, `MEILISEARCH_*` | `meilisearch` (typo-tolerant search) or `database` (MySQL FULLTEXT). |
 
 The frontend reads only `API_URL` (where Laravel is reachable from the Next.js server) and, in Docker, `COOKIE_SECURE`.
 
@@ -136,7 +141,7 @@ stripe listen --forward-to localhost:8000/api/v1/webhooks/stripe
 docker compose exec app php artisan test
 ```
 
-There are 38 feature tests. They run against a separate MySQL database (`shop_testing`) with a fake payment gateway, and cover:
+There are 49 feature tests. They run against a separate MySQL database (`shop_testing`) with a fake payment gateway, and cover:
 - **Checkout and money:** the full flow, ignoring client-sent prices and totals, overselling while a payment is in flight, declined cards, amount mismatches, idempotent capture, expired coupons and coupon usage limits under concurrency, and refunds with stock restored on cancel.
 - **Access and security:** IDOR, login lockout, customer/admin guard separation, permission middleware, Super Admin protections and catalog filters.
 - **Admin smoke test:** every admin read endpoint is rendered against the full seed data.
@@ -186,6 +191,9 @@ The live demo runs on two platforms.
 - **`worker`:** the same image with `CONTAINER_ROLE=worker`. Runs `queue:work` (emails) and the scheduler (expiring unpaid orders, pruning guest carts).
 - **`MySQL`:** Railway's managed MySQL, wired in with `DB_URL=${{MySQL.MYSQL_URL}}`.
 - **`mailpit`:** the demo inbox, behind basic auth (`MP_UI_AUTH`).
+- **`Redis`:** cache, queue and rate limits for the API and the worker (`REDIS_URL=${{Redis.REDIS_URL}}`).
+
+Search runs on MySQL FULLTEXT (`SCOUT_DRIVER=database`), because Railway's free plan allows five services. On a paid plan, add a Meilisearch service and set `SCOUT_DRIVER=meilisearch`, `MEILISEARCH_HOST` and `MEILISEARCH_KEY`; the API indexes the catalog on boot.
 
 **Vercel** (`nocfinity-shop`): the Next.js app, with `API_URL` pointing at the Railway API. `/storage/*` is rewritten to the API, so images stay same-origin.
 
@@ -201,7 +209,7 @@ npx @railway/cli up /tmp/deploy/backend --path-as-root --service worker
 cd frontend && npx vercel deploy --prod
 ```
 
-Production uses `TRUSTED_PROXIES=*`, because the platforms' proxy addresses aren't fixed. Per-IP rate limits then rely on the edge's `X-Forwarded-For`; the per-email login lockout is unaffected.
+Production trusts only Railway's internal proxy range (`TRUSTED_PROXIES=100.64.0.0/10`, `CLIENT_IP_HEADER=X-Real-IP`). Vercel and the API share `BFF_SHARED_SECRET`, so shopper IPs reach the rate limiter intact ([details](docs/ARCHITECTURE.md#visitor-ip-rate-limits-and-lockouts)).
 
 ## Design notes
 
