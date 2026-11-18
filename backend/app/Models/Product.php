@@ -23,6 +23,7 @@ class Product extends Model
     protected function casts(): array
     {
         return [
+            'category_id' => 'integer',
             'price_cents' => 'integer',
             'discount_price_cents' => 'integer',
             'effective_price_cents' => 'integer',

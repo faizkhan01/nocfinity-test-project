@@ -99,6 +99,48 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::put('staff/{staff}', [Admin\StaffController::class, 'update'])->middleware('permission:staff.manage')->name('staff.update');
             Route::delete('staff/{staff}', [Admin\StaffController::class, 'destroy'])->middleware('permission:staff.manage')->name('staff.destroy');
 
+            Route::get('dashboard', Admin\DashboardController::class)->middleware('permission:dashboard.view')->name('dashboard');
+
+            Route::middleware('permission:products.view')->group(function () {
+                Route::get('products', [Admin\ProductController::class, 'index'])->name('products.index');
+                Route::get('products/{product}', [Admin\ProductController::class, 'show'])->withTrashed()->name('products.show');
+            });
+            Route::post('products', [Admin\ProductController::class, 'store'])->middleware('permission:products.create')->name('products.store');
+            Route::put('products/{product}', [Admin\ProductController::class, 'update'])->middleware('permission:products.edit')->name('products.update');
+            Route::patch('products/{product}/status', [Admin\ProductController::class, 'toggle'])->middleware('permission:products.edit')->name('products.toggle');
+            Route::delete('products/{product}', [Admin\ProductController::class, 'destroy'])->middleware('permission:products.delete')->name('products.destroy');
+
+            Route::get('categories', [Admin\CategoryController::class, 'index'])->middleware('permission:categories.view|products.view')->name('categories.index');
+            Route::middleware('permission:categories.manage')->group(function () {
+                Route::post('categories', [Admin\CategoryController::class, 'store'])->name('categories.store');
+                Route::put('categories/{category}', [Admin\CategoryController::class, 'update'])->name('categories.update');
+                Route::delete('categories/{category}', [Admin\CategoryController::class, 'destroy'])->name('categories.destroy');
+            });
+
+            Route::middleware('permission:orders.view')->group(function () {
+                Route::get('orders', [Admin\OrderController::class, 'index'])->name('orders.index');
+                Route::get('orders/{order}', [Admin\OrderController::class, 'show'])->name('orders.show');
+            });
+            Route::patch('orders/{order}/status', [Admin\OrderController::class, 'updateStatus'])->middleware('permission:orders.update_status')->name('orders.status');
+
+            Route::get('coupons', [Admin\CouponController::class, 'index'])->middleware('permission:coupons.view')->name('coupons.index');
+            Route::middleware('permission:coupons.manage')->group(function () {
+                Route::post('coupons', [Admin\CouponController::class, 'store'])->name('coupons.store');
+                Route::put('coupons/{coupon}', [Admin\CouponController::class, 'update'])->name('coupons.update');
+                Route::delete('coupons/{coupon}', [Admin\CouponController::class, 'destroy'])->name('coupons.destroy');
+            });
+
+            Route::middleware('permission:customers.view')->group(function () {
+                Route::get('customers', [Admin\CustomerController::class, 'index'])->name('customers.index');
+                Route::get('customers/{customer}', [Admin\CustomerController::class, 'show'])->name('customers.show');
+            });
+
+            Route::middleware('permission:reviews.manage')->group(function () {
+                Route::get('reviews', [Admin\ReviewController::class, 'index'])->name('reviews.index');
+                Route::patch('reviews/{review}', [Admin\ReviewController::class, 'update'])->name('reviews.update');
+                Route::delete('reviews/{review}', [Admin\ReviewController::class, 'destroy'])->name('reviews.destroy');
+            });
+
             Route::get('activity-logs', [Admin\ActivityLogController::class, 'index'])->middleware('permission:activity_logs.view')->name('activity-logs.index');
         });
     });
