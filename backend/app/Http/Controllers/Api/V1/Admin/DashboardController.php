@@ -40,7 +40,7 @@ class DashboardController extends Controller
 
         if ($staff->hasPermission('orders.view')) {
             $data['recent_orders'] = OrderResource::collection(
-                Order::with('customer:id,name,email')->withCount('items')->latest('id')->limit(8)->get()
+                Order::with('customer:id,name,email,phone')->withCount('items')->latest('id')->limit(8)->get()
             );
         }
 

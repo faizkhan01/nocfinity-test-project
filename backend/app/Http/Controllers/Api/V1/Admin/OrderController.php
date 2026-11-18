@@ -30,7 +30,7 @@ class OrderController extends Controller
             'per_page' => ['nullable', 'integer', 'min:5', 'max:100'],
         ]);
 
-        $orders = Order::with('customer:id,name,email')
+        $orders = Order::with('customer:id,name,email,phone')
             ->withCount('items')
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('customer_id'), fn ($q) => $q->where('user_id', $request->integer('customer_id')))
