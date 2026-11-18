@@ -27,7 +27,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(SecurityHeaders::class);
         $middleware->prependToGroup('api', ForceJsonRequest::class);
-        $middleware->trustProxies(at: explode(',', (string) env('TRUSTED_PROXIES', '127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16')));
+        $proxies = (string) env('TRUSTED_PROXIES', '127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16');
+        $middleware->trustProxies(at: $proxies === '*' ? '*' : explode(',', $proxies));
         $middleware->alias([
             'permission' => EnsurePermission::class,
             'active' => EnsureUserIsActive::class,

@@ -1,0 +1,22 @@
+# Production image (Railway or any container host): FrankenPHP serves Laravel on $PORT.
+FROM dunglas/frankenphp:1-php8.4-alpine
+
+RUN install-php-extensions pdo_mysql bcmath intl zip gd exif pcntl opcache \
+    && printf "opcache.enable=1\nopcache.validate_timestamps=0\nexpose_php=Off\nupload_max_filesize=10M\npost_max_size=60M\n" > "$PHP_INI_DIR/conf.d/production.ini"
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /app
+
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-interaction
+
+COPY . .
+RUN composer dump-autoload --optimize --no-dev \
+    && rm -f .env \
+    && mkdir -p storage/framework/cache storage/framework/views storage/logs storage/app/public bootstrap/cache \
+    && chmod +x docker/start-production.sh
+
+ENV APP_ENV=production APP_DEBUG=false LOG_CHANNEL=stderr
+
+CMD ["docker/start-production.sh"]
