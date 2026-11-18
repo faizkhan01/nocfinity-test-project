@@ -6,11 +6,15 @@ use App\Exceptions\ApiException;
 use App\Models\Role;
 use App\Models\Staff;
 use App\Services\ActivityLogger;
+use App\Services\Auth\TwoFactorService;
 use Illuminate\Support\Facades\DB;
 
 class StaffService
 {
-    public function __construct(private readonly ActivityLogger $activity) {}
+    public function __construct(
+        private readonly ActivityLogger $activity,
+        private readonly TwoFactorService $twoFactor,
+    ) {}
 
     /** @param array{name: string, email: string, password: string, is_active?: bool, roles: list<int>} $data */
     public function create(Staff $actor, array $data): Staff
@@ -48,8 +52,14 @@ class StaffService
                 $staff->password = $data['password'];
             }
 
-            $sessionsInvalid = $staff->isDirty('password') || ($staff->isDirty('is_active') && ! $staff->is_active);
+            $resetTwoFactor = ($data['reset_two_factor'] ?? false) && $staff->two_factor_confirmed_at;
+            $sessionsInvalid = $staff->isDirty('password') || ($staff->isDirty('is_active') && ! $staff->is_active) || $resetTwoFactor;
             $staff->save();
+
+            if ($resetTwoFactor) {
+                $this->twoFactor->disable($staff);
+                $this->activity->log('two_factor.reset', $staff);
+            }
             $staff->roles()->sync($data['roles']);
 
             // A deactivated account or a reset password must not keep working through old tokens.

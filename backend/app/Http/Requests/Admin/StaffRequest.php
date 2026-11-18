@@ -22,6 +22,7 @@ class StaffRequest extends FormRequest
             'email' => ['required', 'string', 'email:rfc', 'max:255', Rule::unique('users', 'email')->ignore($this->route('staff'))],
             'password' => [$creating ? 'required' : 'nullable', 'string', Password::defaults()],
             'is_active' => ['sometimes', 'boolean'],
+            'reset_two_factor' => ['sometimes', 'boolean'],
             'roles' => ['required', 'array', 'min:1'],
             'roles.*' => ['integer', 'distinct', Rule::exists('roles', 'id')],
         ];

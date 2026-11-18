@@ -75,6 +75,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::prefix('auth')->name('auth.')->group(function () {
             Route::middleware('throttle:auth')->group(function () {
                 Route::post('login', [StaffAuthController::class, 'login'])->name('login');
+                Route::post('two-factor-challenge', [StaffAuthController::class, 'twoFactorChallenge'])->name('two-factor');
                 Route::post('forgot-password', [PasswordResetController::class, 'sendLink'])->name('password.email');
                 Route::post('reset-password', [PasswordResetController::class, 'reset'])->name('password.reset');
             });
@@ -88,6 +89,10 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::middleware(['auth:admin', 'active'])->group(function () {
             Route::put('profile', [Admin\ProfileController::class, 'update'])->name('profile.update');
             Route::put('profile/password', [Admin\ProfileController::class, 'password'])->name('profile.password');
+            Route::post('two-factor', [Admin\TwoFactorController::class, 'enable'])->middleware('throttle:auth')->name('profile.two-factor.enable');
+            Route::post('two-factor/confirm', [Admin\TwoFactorController::class, 'confirm'])->middleware('throttle:auth')->name('profile.two-factor.confirm');
+            Route::post('two-factor/recovery-codes', [Admin\TwoFactorController::class, 'recoveryCodes'])->middleware('throttle:auth')->name('profile.two-factor.recovery-codes');
+            Route::delete('two-factor', [Admin\TwoFactorController::class, 'disable'])->middleware('throttle:auth')->name('profile.two-factor.disable');
 
             Route::get('permissions', [Admin\RoleController::class, 'permissions'])->middleware('permission:roles.view')->name('permissions.index');
             Route::get('roles', [Admin\RoleController::class, 'index'])->middleware('permission:roles.view|staff.view')->name('roles.index');
