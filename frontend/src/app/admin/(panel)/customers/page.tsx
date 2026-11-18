@@ -1,0 +1,8 @@
+import type { Metadata } from "next";
+import { CustomersList } from "@/components/admin/customers";
+
+export const metadata: Metadata = { title: "Customers" };
+
+export default function AdminCustomersPage() {
+  return <CustomersList />;
+}
