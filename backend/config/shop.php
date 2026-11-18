@@ -15,6 +15,12 @@ return [
 
     'guest_cart_ttl_days' => 30,
 
+    // The Super Admin account created by the seeders.
+    'super_admin' => [
+        'email' => env('SUPER_ADMIN_EMAIL', 'superadmin@nocfinity-shop.test'),
+        'password' => env('SUPER_ADMIN_PASSWORD', 'SuperAdmin@123'),
+    ],
+
     // Display order of colour swatches in the storefront filters (matches the design palette).
     'color_order' => ['Green', 'Red', 'Yellow', 'Orange', 'Cyan', 'Blue', 'Purple', 'Pink', 'White', 'Black'],
 ];

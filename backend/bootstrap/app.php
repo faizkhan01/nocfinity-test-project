@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsurePermission;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\ForceJsonRequest;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\TrustProxies;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -27,17 +28,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(SecurityHeaders::class);
         $middleware->prependToGroup('api', ForceJsonRequest::class);
-        $proxies = (string) env('TRUSTED_PROXIES', '127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16');
-        $middleware->trustProxies(at: $proxies === '*' ? '*' : explode(',', $proxies));
+        $middleware->replace(\Illuminate\Http\Middleware\TrustProxies::class, TrustProxies::class);
         $middleware->alias([
             'permission' => EnsurePermission::class,
             'active' => EnsureUserIsActive::class,
         ]);
         // Check permissions before route-model binding, so unauthorized staff get 403 rather than learning what exists.
-        // Atomic Redis-backed limiter for the throttle middleware when Redis is the cache store.
-        if (env('CACHE_STORE') === 'redis') {
-            $middleware->throttleWithRedis();
-        }
         $middleware->prependToPriorityList(SubstituteBindings::class, EnsureUserIsActive::class);
         $middleware->prependToPriorityList(SubstituteBindings::class, EnsurePermission::class);
     })

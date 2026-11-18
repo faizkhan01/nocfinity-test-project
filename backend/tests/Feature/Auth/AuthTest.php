@@ -53,6 +53,23 @@ class AuthTest extends TestCase
             ->assertStatus(429)->assertJsonPath('code', 'too_many_attempts');
     }
 
+    public function test_lockout_uses_the_client_ip_forwarded_by_trusted_proxies(): void
+    {
+        Customer::factory()->create(['email' => 'jane@example.com']);
+        config(['app.trusted_proxies' => '*']);
+
+        foreach (range(1, 5) as $_) {
+            $this->withHeader('X-Forwarded-For', '198.51.100.7')
+                ->postJson('/api/v1/auth/login', ['email' => 'jane@example.com', 'password' => 'Wrong@1234'])->assertUnprocessable();
+        }
+
+        // Same proxy, same client: locked. Another client behind the same proxy: not locked.
+        $this->withHeader('X-Forwarded-For', '198.51.100.7')
+            ->postJson('/api/v1/auth/login', ['email' => 'jane@example.com', 'password' => 'Password@123'])->assertStatus(429);
+        $this->withHeader('X-Forwarded-For', '203.0.113.9')
+            ->postJson('/api/v1/auth/login', ['email' => 'jane@example.com', 'password' => 'Password@123'])->assertOk();
+    }
+
     public function test_customer_and_staff_tokens_only_work_on_their_own_guard(): void
     {
         $this->seedRoles();

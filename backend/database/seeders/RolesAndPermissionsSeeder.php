@@ -44,8 +44,8 @@ class RolesAndPermissionsSeeder extends Seeder
         }
 
         $superAdmin = Staff::firstOrCreate(
-            ['email' => strtolower((string) env('SUPER_ADMIN_EMAIL', 'superadmin@nocfinity-shop.test'))],
-            ['name' => 'Super Admin', 'password' => env('SUPER_ADMIN_PASSWORD', 'SuperAdmin@123'), 'email_verified_at' => now()],
+            ['email' => strtolower((string) config('shop.super_admin.email'))],
+            ['name' => 'Super Admin', 'password' => config('shop.super_admin.password'), 'email_verified_at' => now()],
         );
         $superAdmin->roles()->syncWithoutDetaching(Role::where('slug', Staff::SUPER_ADMIN)->pluck('id'));
     }
