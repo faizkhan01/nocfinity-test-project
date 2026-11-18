@@ -50,6 +50,20 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::middleware(['auth:admin', 'active'])->group(function () {
             Route::put('profile', [Admin\ProfileController::class, 'update'])->name('profile.update');
             Route::put('profile/password', [Admin\ProfileController::class, 'password'])->name('profile.password');
+
+            Route::get('permissions', [Admin\RoleController::class, 'permissions'])->middleware('permission:roles.view')->name('permissions.index');
+            Route::get('roles', [Admin\RoleController::class, 'index'])->middleware('permission:roles.view|staff.view')->name('roles.index');
+            Route::post('roles', [Admin\RoleController::class, 'store'])->middleware('permission:roles.manage')->name('roles.store');
+            Route::put('roles/{role}', [Admin\RoleController::class, 'update'])->middleware('permission:roles.manage')->name('roles.update');
+            Route::delete('roles/{role}', [Admin\RoleController::class, 'destroy'])->middleware('permission:roles.manage')->name('roles.destroy');
+
+            Route::get('staff', [Admin\StaffController::class, 'index'])->middleware('permission:staff.view')->name('staff.index');
+            Route::get('staff/{staff}', [Admin\StaffController::class, 'show'])->middleware('permission:staff.view')->name('staff.show');
+            Route::post('staff', [Admin\StaffController::class, 'store'])->middleware('permission:staff.manage')->name('staff.store');
+            Route::put('staff/{staff}', [Admin\StaffController::class, 'update'])->middleware('permission:staff.manage')->name('staff.update');
+            Route::delete('staff/{staff}', [Admin\StaffController::class, 'destroy'])->middleware('permission:staff.manage')->name('staff.destroy');
+
+            Route::get('activity-logs', [Admin\ActivityLogController::class, 'index'])->middleware('permission:activity_logs.view')->name('activity-logs.index');
         });
     });
 });
