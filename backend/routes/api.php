@@ -45,6 +45,8 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
     Route::post('products/{slug}/reviews', [Storefront\ReviewController::class, 'store'])
         ->middleware(['auth:customer', 'active'])->name('products.reviews.store');
 
+    Route::post('newsletter', Storefront\NewsletterController::class)->middleware('throttle:auth')->name('newsletter.subscribe');
+
     // Cart (guest via X-Cart-Token, or signed-in customer)
     Route::prefix('cart')->name('cart.')->group(function () {
         Route::get('/', [Storefront\CartController::class, 'show'])->name('show');
