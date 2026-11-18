@@ -4,7 +4,7 @@ import { COOKIE } from "@/lib/config";
 const CUSTOMER_ONLY = ["/checkout", "/orders", "/account"];
 const ADMIN_PUBLIC = ["/admin/login", "/admin/forgot-password", "/admin/reset-password"];
 
-function contentSecurityPolicy(nonce: string): string {
+function contentSecurityPolicy(nonce: string, https: boolean): string {
   const dev = process.env.NODE_ENV !== "production";
 
   return [
@@ -19,7 +19,7 @@ function contentSecurityPolicy(nonce: string): string {
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
-    ...(dev ? [] : ["upgrade-insecure-requests"]),
+    ...(https ? ["upgrade-insecure-requests"] : []),
   ].join("; ");
 }
 
@@ -43,7 +43,8 @@ export function middleware(request: NextRequest) {
   if (redirect) return redirect;
 
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
-  const csp = contentSecurityPolicy(nonce);
+  const https = request.nextUrl.protocol === "https:" || request.headers.get("x-forwarded-proto") === "https";
+  const csp = contentSecurityPolicy(nonce, https);
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", csp);

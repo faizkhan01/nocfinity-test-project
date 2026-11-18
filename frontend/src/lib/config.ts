@@ -7,3 +7,6 @@ export const COOKIE = {
 } as const;
 
 export const isProduction = process.env.NODE_ENV === "production";
+
+/** Secure cookies in production unless explicitly disabled for a plain-HTTP local run. */
+export const secureCookies = isProduction && process.env.COOKIE_SECURE !== "false";

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { API_URL, COOKIE, isProduction } from "@/lib/config";
+import { API_URL, COOKIE, secureCookies } from "@/lib/config";
 
 type Ctx = { params: Promise<{ path: string[] }> };
 
@@ -15,7 +15,7 @@ const LOGOUT_ROUTES: Record<string, "customer" | "admin"> = {
   "admin/auth/logout": "admin",
 };
 
-const cookieOptions = { httpOnly: true, secure: isProduction, sameSite: "lax" as const, path: "/" };
+const cookieOptions = { httpOnly: true, secure: secureCookies, sameSite: "lax" as const, path: "/" };
 
 /** Same-origin check for state-changing requests (CSRF), on top of SameSite=Lax cookies. */
 function isSameOrigin(request: NextRequest): boolean {
