@@ -37,6 +37,7 @@ class ReviewController extends Controller
         $reviews = ProductReview::where('is_approved', true)
             ->where('rating', '>=', 4)
             ->with('customer:id,name')
+            ->orderByDesc('rating')
             ->latest()
             ->limit(10)
             ->get();

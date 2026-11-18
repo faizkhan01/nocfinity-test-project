@@ -19,26 +19,32 @@ class OrderSeeder extends Seeder
 {
     private const LIFECYCLE = ['pending', 'paid', 'processing', 'shipped', 'delivered'];
 
+    /** Review copy from the design: product => [author, rating, comment, days ago]. */
     private const REVIEWS = [
         'One Life Graphic T-shirt' => [
-            ['Samantha D.', 5, "I absolutely love this t-shirt! The design is unique and the fabric feels so comfortable. As a fellow designer, I appreciate the attention to detail. It's become my favorite go-to shirt."],
-            ['Alex M.', 4, "The t-shirt exceeded my expectations! The colors are vibrant and the print quality is top-notch. Being a UI/UX designer myself, I'm quite picky about aesthetics, and this t-shirt definitely gets a thumbs up from me."],
-            ['Ethan R.', 4, "This t-shirt is a must-have for anyone who appreciates good design. The minimalistic yet stylish pattern caught my eye, and the fit is perfect. I can see the designer's touch in every aspect of this shirt."],
-            ['Olivia P.', 4, "As a UI/UX enthusiast, I value simplicity and functionality. This t-shirt not only represents those principles but also feels great to wear. It's evident that the designer poured their creativity into making this t-shirt stand out."],
-            ['Liam K.', 4, "This t-shirt is a fusion of comfort and creativity. The fabric is soft, and the design speaks volumes about the designer's skill. It's like wearing a piece of art that reflects my passion for both design and fashion."],
-            ['Ava H.', 5, "I'm not just wearing a t-shirt; I'm wearing a piece of design philosophy. The intricate details and thoughtful layout of the design make this shirt a conversation starter."],
-            ['Sarah M.', 5, "I'm blown away by the quality and style of the clothes I received from Shop.co. From casual wear to elegant dresses, every piece I've bought has exceeded my expectations."],
-            ['James L.', 5, "As someone who's always on the lookout for unique fashion pieces, I'm thrilled to have stumbled upon Shop.co. The selection of clothes is not only diverse but also on-point with the latest trends."],
+            ['Samantha D.', 5, "I absolutely love this t-shirt! The design is unique and the fabric feels so comfortable. As a fellow designer, I appreciate the attention to detail. It's become my favorite go-to shirt.", 5],
+            ['Alex M.', 4, "The t-shirt exceeded my expectations! The colors are vibrant and the print quality is top-notch. Being a UI/UX designer myself, I'm quite picky about aesthetics, and this t-shirt definitely gets a thumbs up from me.", 6],
+            ['Ethan R.', 4, "This t-shirt is a must-have for anyone who appreciates good design. The minimalistic yet stylish pattern caught my eye, and the fit is perfect. I can see the designer's touch in every aspect of this shirt.", 7],
+            ['Olivia P.', 4, "As a UI/UX enthusiast, I value simplicity and functionality. This t-shirt not only represents those principles but also feels great to wear. It's evident that the designer poured their creativity into making this t-shirt stand out.", 8],
+            ['Liam K.', 4, "This t-shirt is a fusion of comfort and creativity. The fabric is soft, and the design speaks volumes about the designer's skill. It's like wearing a piece of art that reflects my passion for both design and fashion.", 9],
+            ['Ava H.', 5, "I'm not just wearing a t-shirt; I'm wearing a piece of design philosophy. The intricate details and thoughtful layout of the design make this shirt a conversation starter.", 10],
+        ],
+        // The home page testimonials: the most recent five-star reviews.
+        'Vertical Striped Shirt' => [
+            ['Sarah M.', 5, "I'm blown away by the quality and style of the clothes I received from Shop.co. From casual wear to elegant dresses, every piece I've bought has exceeded my expectations.", 1],
         ],
         'Courage Graphic T-shirt' => [
-            ['Alex K.', 4, 'Finding clothes that align with my personal style used to be a challenge until I discovered Shop.co. The range of options they offer is truly remarkable, catering to a variety of tastes and occasions.'],
-            ['Mooen R.', 4, "As someone who's always on the lookout for unique fashion pieces, I'm thrilled with this one. Great colours and the print still looks new after many washes."],
+            ['Alex K.', 5, 'Finding clothes that align with my personal style used to be a challenge until I discovered Shop.co. The range of options they offer is truly remarkable, catering to a variety of tastes and occasions.', 2],
+            ['Mooen R.', 3, 'The print is bold and the colours stay bright after washing, but the fit runs a little large for me.', 4],
+        ],
+        'Black Striped T-shirt' => [
+            ['James L.', 5, "As someone who's always on the lookout for unique fashion pieces, I'm thrilled to have stumbled upon Shop.co. The selection of clothes is not only diverse but also on-point with the latest trends.", 3],
         ],
     ];
 
     /** Two reviews per product averaging to the rating shown in the design. */
     private const RATING_PAIRS = [
-        'T-shirt with Tape Details' => [5, 4], 'Skinny Fit Jeans' => [4, 3], 'Checkered Shirt' => [5, 4],
+        'One Life Graphic T-shirt' => [5, 5], 'T-shirt with Tape Details' => [5, 4], 'Skinny Fit Jeans' => [4, 3], 'Checkered Shirt' => [5, 4],
         'Sleeve Striped T-shirt' => [5, 4], 'Vertical Striped Shirt' => [5, 5], 'Loose Fit Bermuda Shorts' => [3, 3],
         'Faded Skinny Jeans' => [5, 4], 'Polo with Contrast Trims' => [4, 4], 'Gradient Graphic T-shirt' => [4, 3],
         'Polo with Tipping Details' => [5, 4], 'Black Striped T-shirt' => [5, 5], 'Classic Blue Denim' => [5, 4],
@@ -83,15 +89,15 @@ class OrderSeeder extends Seeder
         }
 
         foreach (self::REVIEWS as $productName => $entries) {
-            foreach ($entries as $index => [$name, $rating, $comment]) {
-                $this->review($products[$productName], $this->reviewer($name), $rating, $comment, now()->subDays(60 - $index));
+            foreach ($entries as [$name, $rating, $comment, $daysAgo]) {
+                $this->review($products[$productName], $this->reviewer($name), $rating, $comment, now()->subDays($daysAgo));
             }
         }
 
         foreach (self::RATING_PAIRS as $productName => $ratings) {
             foreach ($ratings as $index => $rating) {
                 $this->review($products[$productName], $shoppers[($index + crc32($productName)) % $shoppers->count()], $rating,
-                    self::GENERIC_COMMENTS[($index + strlen($productName)) % count(self::GENERIC_COMMENTS)], now()->subDays(rand(5, 40)));
+                    self::GENERIC_COMMENTS[($index + strlen($productName)) % count(self::GENERIC_COMMENTS)], now()->subDays(rand(15, 60)));
             }
         }
 
