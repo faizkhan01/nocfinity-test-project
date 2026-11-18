@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\Auth\CustomerProfileController;
 use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\V1\Auth\PasswordResetController;
 use App\Http\Controllers\Api\V1\Auth\StaffAuthController;
+use App\Http\Controllers\Api\V1\Storefront;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->middleware('throttle:api')->group(function () {
@@ -31,6 +32,17 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::put('password', [CustomerProfileController::class, 'password'])->name('password.update');
         });
     });
+
+    // Catalog (public)
+    Route::get('categories', [Storefront\CategoryController::class, 'index'])->name('categories.index');
+    Route::get('products', [Storefront\ProductController::class, 'index'])->name('products.index');
+    Route::get('products/filters', [Storefront\ProductController::class, 'filters'])->name('products.filters');
+    Route::get('products/{slug}', [Storefront\ProductController::class, 'show'])->name('products.show');
+    Route::get('products/{slug}/related', [Storefront\ProductController::class, 'related'])->name('products.related');
+    Route::get('products/{slug}/reviews', [Storefront\ReviewController::class, 'index'])->name('products.reviews.index');
+    Route::get('reviews/featured', [Storefront\ReviewController::class, 'featured'])->name('reviews.featured');
+    Route::post('products/{slug}/reviews', [Storefront\ReviewController::class, 'store'])
+        ->middleware(['auth:customer', 'active'])->name('products.reviews.store');
 
     // Admin panel
     Route::prefix('admin')->name('admin.')->group(function () {
