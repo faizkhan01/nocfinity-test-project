@@ -23,7 +23,7 @@ class StripeGateway implements PaymentGateway
             'automatic_payment_methods' => ['enabled' => true, 'allow_redirects' => 'never'],
             'description' => "Order {$order->order_number}",
             'metadata' => ['order_id' => (string) $order->id, 'order_number' => $order->order_number],
-        ], ['idempotency_key' => 'order-intent-'.$order->id]));
+        ], ['idempotency_key' => self::idempotencyKey($order)]));
     }
 
     public function retrieve(string $intentId): PaymentIntentData
@@ -44,6 +44,12 @@ class StripeGateway implements PaymentGateway
     public function refund(string $intentId): void
     {
         $this->call(fn () => $this->stripe->refunds->create(['payment_intent' => $intentId]));
+    }
+
+    /** Stable for retries of the same order, but unique across database resets and environments sharing a Stripe account. */
+    private static function idempotencyKey(Order $order): string
+    {
+        return 'order-intent-'.hash_hmac('sha256', $order->id.'|'.$order->created_at?->toIso8601String(), (string) config('app.key'));
     }
 
     private function call(callable $request): PaymentIntentData
