@@ -4,6 +4,7 @@ export const FILTER_KEYS = ["search", "category", "min_price", "max_price", "col
 export type ShopParams = Partial<Record<(typeof FILTER_KEYS)[number], string>>;
 
 export const SORTS = [
+  { value: "relevance", label: "Best Match" },
   { value: "popular", label: "Most Popular" },
   { value: "newest", label: "Newest" },
   { value: "price_asc", label: "Price: Low to High" },
@@ -12,6 +13,11 @@ export const SORTS = [
 ] as const;
 
 export const PER_PAGE = 9;
+
+/** Searches rank by relevance unless the shopper picks another order. */
+export function defaultSort(params: ShopParams): string {
+  return params.search ? "relevance" : "popular";
+}
 
 export function pickParams(raw: Record<string, string | string[] | undefined>): ShopParams {
   const out: ShopParams = {};

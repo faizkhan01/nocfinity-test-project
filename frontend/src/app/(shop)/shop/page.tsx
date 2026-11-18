@@ -6,7 +6,7 @@ import { ProductCard } from "@/components/shop/product-card";
 import { ButtonLink } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { apiGet } from "@/lib/api/server";
-import { PER_PAGE, pickParams, shopHref, type ShopParams } from "@/lib/shop-filters";
+import { PER_PAGE, defaultSort, pickParams, shopHref, type ShopParams } from "@/lib/shop-filters";
 import type { Category, Facets, Paginated, ProductSummary } from "@/lib/types";
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -26,7 +26,7 @@ function titleFor(params: ShopParams, categories: Category[]): string {
 
 export default async function ShopPage({ searchParams }: Props) {
   const params = pickParams(await searchParams);
-  const query = new URLSearchParams({ ...params, sort: params.sort ?? "popular", per_page: String(PER_PAGE) });
+  const query = new URLSearchParams({ ...params, sort: params.sort ?? defaultSort(params), per_page: String(PER_PAGE) });
 
   const [products, categories, facets] = await Promise.all([
     apiGet<Paginated<ProductSummary>>(`products?${query}`),
