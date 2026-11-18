@@ -59,6 +59,18 @@ class CheckoutTest extends TestCase
         Mail::assertQueued(OrderStatusUpdated::class);
     }
 
+    public function test_checkout_with_several_products_returns_every_line(): void
+    {
+        $this->actingAsCustomer();
+        foreach (Product::factory()->count(3)->create(['stock' => 5]) as $product) {
+            $this->addToCart($product, 1);
+        }
+
+        $this->postJson('/api/v1/checkout', ['shipping' => self::SHIPPING])
+            ->assertCreated()
+            ->assertJsonCount(3, 'data.order.items');
+    }
+
     public function test_client_supplied_prices_and_totals_are_ignored(): void
     {
         $product = Product::factory()->create(['price_cents' => 5000, 'stock' => 5]);

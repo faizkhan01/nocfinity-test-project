@@ -21,7 +21,7 @@ class CheckoutController extends Controller
 
         return response()->json([
             'data' => [
-                'order' => new OrderResource($order->load('items')),
+                'order' => new OrderResource($order->load('items.product:id,slug')),
                 'payment' => [
                     'client_secret' => $intent->clientSecret,
                     'publishable_key' => config('services.stripe.key'),
