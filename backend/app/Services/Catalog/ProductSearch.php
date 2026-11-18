@@ -72,7 +72,9 @@ class ProductSearch
     {
         $products = Product::active()->get(['colors', 'sizes', 'style', 'effective_price_cents']);
 
-        $colors = $products->flatMap(fn (Product $p) => $p->colors ?? [])->unique('name')->sortBy('name')->values();
+        $order = array_flip(config('shop.color_order', []));
+        $colors = $products->flatMap(fn (Product $p) => $p->colors ?? [])->unique('name')
+            ->sortBy(fn (array $c) => [$order[$c['name']] ?? PHP_INT_MAX, $c['name']])->values();
         $sizes = $products->flatMap(fn (Product $p) => $p->sizes ?? [])->unique()->values();
 
         return [

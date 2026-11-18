@@ -14,4 +14,7 @@ return [
     'pending_order_ttl_minutes' => (int) env('SHOP_PENDING_ORDER_TTL', 60),
 
     'guest_cart_ttl_days' => 30,
+
+    // Display order of colour swatches in the storefront filters (matches the design palette).
+    'color_order' => ['Green', 'Red', 'Yellow', 'Orange', 'Cyan', 'Blue', 'Purple', 'Pink', 'White', 'Black'],
 ];
