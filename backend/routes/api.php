@@ -44,6 +44,16 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
     Route::post('products/{slug}/reviews', [Storefront\ReviewController::class, 'store'])
         ->middleware(['auth:customer', 'active'])->name('products.reviews.store');
 
+    // Cart (guest via X-Cart-Token, or signed-in customer)
+    Route::prefix('cart')->name('cart.')->group(function () {
+        Route::get('/', [Storefront\CartController::class, 'show'])->name('show');
+        Route::post('items', [Storefront\CartController::class, 'addItem'])->name('items.store');
+        Route::patch('items/{item}', [Storefront\CartController::class, 'updateItem'])->whereNumber('item')->name('items.update');
+        Route::delete('items/{item}', [Storefront\CartController::class, 'removeItem'])->whereNumber('item')->name('items.destroy');
+        Route::post('coupon', [Storefront\CartController::class, 'applyCoupon'])->name('coupon.store');
+        Route::delete('coupon', [Storefront\CartController::class, 'removeCoupon'])->name('coupon.destroy');
+    });
+
     // Admin panel
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::prefix('auth')->name('auth.')->group(function () {

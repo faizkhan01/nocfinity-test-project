@@ -8,6 +8,7 @@ use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\CustomerResource;
 use App\Models\Customer;
 use App\Services\Auth\LoginService;
+use App\Services\Checkout\CartService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,7 +16,10 @@ use Illuminate\Http\Response;
 
 class CustomerAuthController extends Controller
 {
-    public function __construct(private readonly LoginService $login) {}
+    public function __construct(
+        private readonly LoginService $login,
+        private readonly CartService $carts,
+    ) {}
 
     public function register(RegisterRequest $request): JsonResponse
     {
@@ -49,6 +53,8 @@ class CustomerAuthController extends Controller
 
     private function authenticated(Customer $customer, Request $request, int $status = 200): JsonResponse
     {
+        $this->carts->mergeGuestCart($customer, $request->header('X-Cart-Token'));
+
         return response()->json([
             'data' => [
                 ...$this->login->issueToken($customer, 'customer', $request),
