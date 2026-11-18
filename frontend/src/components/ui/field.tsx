@@ -1,11 +1,14 @@
-import { forwardRef } from "react";
+"use client";
+
+import { forwardRef, useId } from "react";
 import { cn } from "@/lib/format";
 
 type InputProps = React.InputHTMLAttributes<HTMLInputElement> & { label?: string; error?: string; hint?: string };
 
 /** Labelled text input with an inline error, used by every storefront and admin form. */
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input({ label, error, hint, className, id, ...props }, ref) {
-  const inputId = id ?? props.name;
+  const generatedId = useId();
+  const inputId = id ?? props.name ?? generatedId;
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -39,7 +42,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input({ l
 type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string; error?: string };
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea({ label, error, className, id, ...props }, ref) {
-  const inputId = id ?? props.name;
+  const generatedId = useId();
+  const inputId = id ?? props.name ?? generatedId;
 
   return (
     <div className="flex flex-col gap-1.5">
