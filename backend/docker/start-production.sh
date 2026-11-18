@@ -16,6 +16,11 @@ php artisan migrate --force
 php artisan storage:link > /dev/null 2>&1 || true
 php artisan app:publish-seed-images
 
+# Break-glass: set RESET_TWO_FACTOR_FOR=<email> for one deploy, then remove it.
+if [ -n "$RESET_TWO_FACTOR_FOR" ]; then
+    php artisan app:reset-two-factor "$RESET_TWO_FACTOR_FOR" --list
+fi
+
 if [ "$SCOUT_DRIVER" = "meilisearch" ]; then
     php artisan scout:sync-index-settings && php artisan scout:import "App\\Models\\Product" || echo "Search index not ready; product search falls back to the database."
 fi

@@ -99,6 +99,20 @@ class TwoFactorTest extends TestCase
         $this->deleteJson('/api/v1/admin/two-factor', ['password' => 'wrong'])->assertUnprocessable();
     }
 
+    public function test_the_break_glass_command_resets_even_a_super_admin(): void
+    {
+        $this->staffWithTwoFactor('lost-sa@shop.test');
+        $staff = Staff::where('email', 'lost-sa@shop.test')->first();
+        $staff->roles()->sync([\App\Models\Role::where('slug', Staff::SUPER_ADMIN)->value('id')]);
+        $staff->createToken('stale');
+
+        $this->artisan('app:reset-two-factor', ['email' => 'LOST-SA@shop.test'])->assertSuccessful();
+
+        $this->assertNull($staff->fresh()->two_factor_confirmed_at);
+        $this->assertSame(0, $staff->tokens()->count());
+        $this->artisan('app:reset-two-factor', ['email' => 'nobody@shop.test'])->assertFailed();
+    }
+
     /** @param list<string>|null $recoveryCodes */
     private function staffWithTwoFactor(string $email, ?array &$recoveryCodes = null): string
     {
