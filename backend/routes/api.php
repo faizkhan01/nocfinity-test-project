@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\V1\Auth\PasswordResetController;
 use App\Http\Controllers\Api\V1\Auth\StaffAuthController;
 use App\Http\Controllers\Api\V1\Storefront;
+use App\Http\Controllers\Api\V1\Webhooks\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->middleware('throttle:api')->group(function () {
@@ -53,6 +54,19 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('coupon', [Storefront\CartController::class, 'applyCoupon'])->name('coupon.store');
         Route::delete('coupon', [Storefront\CartController::class, 'removeCoupon'])->name('coupon.destroy');
     });
+
+    // Checkout and orders (customer only)
+    Route::middleware(['auth:customer', 'active'])->group(function () {
+        Route::post('checkout', [Storefront\CheckoutController::class, 'store'])->middleware('throttle:checkout')->name('checkout');
+        Route::get('orders', [Storefront\OrderController::class, 'index'])->name('orders.index');
+        Route::get('orders/{number}', [Storefront\OrderController::class, 'show'])->name('orders.show');
+        Route::post('orders/{number}/confirm-payment', [Storefront\OrderController::class, 'confirmPayment'])
+            ->middleware('throttle:checkout')->name('orders.confirm-payment');
+        Route::get('orders/{number}/payment-intent', [Storefront\OrderController::class, 'paymentIntent'])->name('orders.payment-intent');
+        Route::post('orders/{number}/cancel', [Storefront\OrderController::class, 'cancel'])->name('orders.cancel');
+    });
+
+    Route::post('webhooks/stripe', StripeWebhookController::class)->withoutMiddleware('throttle:api')->name('webhooks.stripe');
 
     // Admin panel
     Route::prefix('admin')->name('admin.')->group(function () {
