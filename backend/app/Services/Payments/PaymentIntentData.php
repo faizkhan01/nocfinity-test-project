@@ -12,6 +12,7 @@ final class PaymentIntentData
         public readonly ?int $orderId,
         public readonly ?string $clientSecret = null,
         public readonly ?string $errorMessage = null,
+        public readonly ?string $paymentMethodType = 'card',
     ) {}
 
     public function isAuthorized(): bool

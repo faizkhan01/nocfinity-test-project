@@ -54,7 +54,12 @@ class PaymentService
             throw new ApiException('Your payment is still processing. We will email you once it completes.', 'payment_processing', 409);
         }
 
-        if ($intent->amountCents !== $order->total_cents || $intent->currency !== strtolower($order->currency) || $intent->orderId !== $order->id) {
+        $mismatch = $intent->amountCents !== $order->total_cents
+            || $intent->currency !== strtolower($order->currency)
+            || $intent->orderId !== $order->id
+            || ($intent->isAuthorized() && $intent->paymentMethodType !== 'card');
+
+        if ($mismatch) {
             Log::alert('Payment intent does not match order', ['order_id' => $order->id, 'intent' => $intent->id]);
             $this->lifecycle->cancel($order, 'Payment amount mismatch', notify: false);
 

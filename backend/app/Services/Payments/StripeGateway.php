@@ -19,7 +19,8 @@ class StripeGateway implements PaymentGateway
             'amount' => $order->total_cents,
             'currency' => strtolower($order->currency),
             'capture_method' => 'manual',
-            'payment_method_types' => ['card'],
+            // Newer API versions drop payment_method_types; card-only is enforced at finalize via paymentMethodType.
+            'automatic_payment_methods' => ['enabled' => true, 'allow_redirects' => 'never'],
             'description' => "Order {$order->order_number}",
             'metadata' => ['order_id' => (string) $order->id, 'order_number' => $order->order_number],
         ], ['idempotency_key' => 'order-intent-'.$order->id]));
@@ -27,7 +28,7 @@ class StripeGateway implements PaymentGateway
 
     public function retrieve(string $intentId): PaymentIntentData
     {
-        return $this->call(fn () => $this->stripe->paymentIntents->retrieve($intentId));
+        return $this->call(fn () => $this->stripe->paymentIntents->retrieve($intentId, ['expand' => ['payment_method']]));
     }
 
     public function capture(string $intentId): PaymentIntentData
@@ -68,6 +69,7 @@ class StripeGateway implements PaymentGateway
             orderId: isset($intent->metadata['order_id']) ? (int) $intent->metadata['order_id'] : null,
             clientSecret: $intent->client_secret,
             errorMessage: $intent->last_payment_error?->message,
+            paymentMethodType: is_object($intent->payment_method) ? $intent->payment_method->type : null,
         );
     }
 }
