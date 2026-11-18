@@ -59,6 +59,12 @@ return [
     // Proxies allowed to set X-Forwarded-* (the Next.js BFF, platform edges); "*" trusts any.
     'trusted_proxies' => env('TRUSTED_PROXIES', '127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16'),
 
+    // Header a platform edge overwrites with the visitor IP (Railway: X-Real-IP), trusted only from trusted_proxies.
+    'client_ip_header' => env('CLIENT_IP_HEADER'),
+
+    // Shared with the Next.js BFF so its X-Client-IP is believed; never exposed to browsers.
+    'bff_secret' => env('BFF_SHARED_SECRET'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

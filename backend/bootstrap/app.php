@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnsurePermission;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\ForceJsonRequest;
+use App\Http\Middleware\ResolveClientIp;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\TrustProxies;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(SecurityHeaders::class);
         $middleware->prependToGroup('api', ForceJsonRequest::class);
         $middleware->replace(\Illuminate\Http\Middleware\TrustProxies::class, TrustProxies::class);
+        $middleware->append(ResolveClientIp::class);
         $middleware->alias([
             'permission' => EnsurePermission::class,
             'active' => EnsureUserIsActive::class,

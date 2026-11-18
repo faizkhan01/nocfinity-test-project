@@ -80,6 +80,7 @@ services:
     environment:
       # Server-side calls and the /storage rewrite reach Laravel over the compose network.
       API_URL: http://nginx
+      BFF_SHARED_SECRET: local-bff-secret-change-me
       # Plain-HTTP localhost demo; set to true behind HTTPS.
       COOKIE_SECURE: "false"
     ports:

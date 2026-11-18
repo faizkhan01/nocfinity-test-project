@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { API_URL, COOKIE, secureCookies } from "@/lib/config";
+import { API_URL, COOKIE, clientIpHeaders, secureCookies } from "@/lib/config";
 
 type Ctx = { params: Promise<{ path: string[] }> };
 
@@ -64,7 +64,7 @@ async function proxy(request: NextRequest, { params }: Ctx) {
   if (token) headers.set("Authorization", `Bearer ${token}`);
   if (cartToken && !isAdmin) headers.set("X-Cart-Token", cartToken);
   headers.set("User-Agent", request.headers.get("user-agent") ?? "shop-bff");
-  headers.set("X-Forwarded-For", request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1");
+  for (const [name, value] of Object.entries(clientIpHeaders(request.headers))) headers.set(name, value);
 
   let upstream: Response;
   try {

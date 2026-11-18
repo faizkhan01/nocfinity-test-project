@@ -1,6 +1,6 @@
 import "server-only";
 import { cookies, headers } from "next/headers";
-import { API_URL, COOKIE } from "@/lib/config";
+import { API_URL, COOKIE, clientIpHeaders } from "@/lib/config";
 import { ApiError } from "./errors";
 
 type Options = { auth?: "customer" | "admin"; revalidate?: number };
@@ -11,11 +11,11 @@ export async function apiGet<T>(path: string, { auth, revalidate }: Options = {}
   const requestHeaders = new Headers({ Accept: "application/json" });
   const token = auth ? jar.get(auth === "admin" ? COOKIE.admin : COOKIE.customer)?.value : undefined;
   const cartToken = jar.get(COOKIE.cart)?.value;
-  const forwardedFor = (await headers()).get("x-forwarded-for");
+  const ipHeaders = clientIpHeaders(await headers());
 
   if (token) requestHeaders.set("Authorization", `Bearer ${token}`);
   if (cartToken && auth !== "admin") requestHeaders.set("X-Cart-Token", cartToken);
-  if (forwardedFor) requestHeaders.set("X-Forwarded-For", forwardedFor);
+  for (const [name, value] of Object.entries(ipHeaders)) requestHeaders.set(name, value);
 
   const response = await fetch(`${API_URL}/api/v1/${path.replace(/^\//, "")}`, {
     headers: requestHeaders,
