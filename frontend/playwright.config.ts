@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * End-to-end tests against a running stack (docker compose locally and in CI).
+ * End-to-end tests against a running stack (Docker Compose by default).
  * E2E_BASE_URL points elsewhere; E2E_STRIPE=1 enables the real Stripe test-mode checkout.
  */
 export default defineConfig({

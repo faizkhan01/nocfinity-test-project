@@ -162,5 +162,5 @@ Trusted proxies are read from config **at request time**. An earlier version rea
   - Object storage (S3 or Cloudflare R2) for uploads, with image resizing.
   - Meilisearch in production too (it needs a paid Railway plan; the code switches with `SCOUT_DRIVER`).
 - **Webhook event table:** record processed Stripe event IDs, and add a reconciliation job for intents authorized but never finalized (for example if the browser closes and webhooks are off).
-- **Static analysis:** Larastan is installed but not yet tuned or part of CI.
+- **CI:** run the backend, unit and end-to-end suites on every push (they run locally today), plus Larastan once it is tuned.
 - **Accessibility:** a full audit, and a dark theme for the storefront (the admin has one).

@@ -137,8 +137,6 @@ stripe listen --forward-to localhost:8000/api/v1/webhooks/stripe
 
 ## Tests
 
-Every push and pull request runs the [CI pipeline](.github/workflows/ci.yml): backend style and tests, frontend lint, types, unit tests and build, and then the end-to-end suite against the full Docker Compose stack.
-
 ### Backend: 56 feature tests
 
 ```bash
@@ -177,8 +175,7 @@ E2E_STRIPE=1 MAILPIT_URL=http://localhost:8025 npm run e2e
 Notes on running them:
 - The e2e override raises the per-IP rate limits, because every request comes from one machine.
 - The checkout specs need Stripe test keys in `backend/.env` and `E2E_STRIPE=1`; otherwise they are skipped.
-- In CI they use the `STRIPE_TEST_PUBLISHABLE_KEY` and `STRIPE_TEST_SECRET_KEY` repository secrets when they are set.
-- On failure, CI uploads the Playwright report with traces, screenshots and videos.
+- On failure, `frontend/playwright-report` has traces, screenshots and videos (`npx playwright show-report`).
 
 ## Feature checklist
 
@@ -205,7 +202,7 @@ Notes on running them:
 | Bonus | Status |
 | --- | --- |
 | Docker one-command run | ✅ |
-| Feature tests for checkout, stock and RBAC | ✅ plus frontend unit tests, Playwright end-to-end tests and a CI pipeline |
+| Feature tests for checkout, stock and RBAC | ✅ plus frontend unit tests and Playwright end-to-end tests |
 | Guest cart merged on login | ✅ (server-side guest cart identified by an httpOnly cookie) |
 | Product reviews and ratings | ✅ verified buyers only, with moderation |
 | Email verification | ✅ signed link, resend from the account page |
