@@ -21,6 +21,13 @@ return [
         'password' => env('SUPER_ADMIN_PASSWORD', 'SuperAdmin@123'),
     ],
 
+    // Requests per minute per user or visitor IP. Raised only for automated end-to-end runs, where one IP does everything.
+    'rate_limits' => [
+        'api' => (int) env('RATE_LIMIT_API', 120),
+        'auth' => (int) env('RATE_LIMIT_AUTH', 10),
+        'checkout' => (int) env('RATE_LIMIT_CHECKOUT', 10),
+    ],
+
     // Display order of colour swatches in the storefront filters (matches the design palette).
     'color_order' => ['Green', 'Red', 'Yellow', 'Orange', 'Cyan', 'Blue', 'Purple', 'Pink', 'White', 'Black'],
 

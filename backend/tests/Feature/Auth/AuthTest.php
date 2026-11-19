@@ -53,6 +53,17 @@ class AuthTest extends TestCase
             ->assertStatus(429)->assertJsonPath('code', 'too_many_attempts');
     }
 
+    public function test_route_rate_limits_follow_the_configuration(): void
+    {
+        config(['shop.rate_limits.auth' => 2]);
+
+        foreach (range(1, 2) as $_) {
+            $this->postJson('/api/v1/auth/login', ['email' => 'nobody@example.com', 'password' => 'Wrong@1234'])->assertUnprocessable();
+        }
+
+        $this->postJson('/api/v1/auth/login', ['email' => 'nobody@example.com', 'password' => 'Wrong@1234'])->assertStatus(429);
+    }
+
     public function test_lockout_uses_the_client_ip_forwarded_by_trusted_proxies(): void
     {
         Customer::factory()->create(['email' => 'jane@example.com']);
