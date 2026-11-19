@@ -16,6 +16,11 @@ php artisan migrate --force
 php artisan storage:link > /dev/null 2>&1 || true
 php artisan app:publish-seed-images
 
+# Images still on the volume move to Cloudinary; a no-op once everything is there.
+if [ "$MEDIA_DRIVER" = "cloudinary" ]; then
+    php artisan app:move-media-to-cloudinary || echo "Image move to Cloudinary did not finish; it retries on the next boot."
+fi
+
 # Break-glass: set RESET_TWO_FACTOR_FOR=<email> for one deploy, then remove it.
 if [ -n "$RESET_TWO_FACTOR_FOR" ]; then
     php artisan app:reset-two-factor "$RESET_TWO_FACTOR_FOR" --list
