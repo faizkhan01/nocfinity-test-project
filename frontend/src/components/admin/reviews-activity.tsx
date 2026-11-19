@@ -125,7 +125,7 @@ export function ActivityView() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Activity log" description="Every change made in the admin panel, newest first." />
+      <PageHeader title="Activity log" description="Every change made in the admin panel, plus system alerts such as emails that failed to send, newest first." />
       <Card>
         <Table head={["When", "Who", "Action", "Subject", "Details", "IP"]}>
           {isLoading ? (

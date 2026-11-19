@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\Role;
 use App\Models\Staff;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use App\Services\Payments\FakePaymentGateway;
 use App\Services\Payments\PaymentGateway;
 use App\Services\Payments\StripeGateway;
@@ -20,11 +21,15 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
+use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use InvalidArgumentException;
 use Stripe\StripeClient;
@@ -79,6 +84,23 @@ class AppServiceProvider extends ServiceProvider
 
         $this->configureRateLimiting();
         $this->configureMailTransports();
+        $this->reportFailedJobs();
+    }
+
+    /** A job that used up its retries (e.g. an email the provider kept refusing) is logged and shown in the admin activity log. */
+    private function reportFailedJobs(): void
+    {
+        Queue::failing(function (JobFailed $event) {
+            $details = [
+                'job' => $event->job->resolveName(),
+                'queue' => $event->job->getQueue(),
+                'attempts' => $event->job->attempts(),
+                'error' => Str::limit($event->exception->getMessage(), 300),
+            ];
+
+            Log::critical('Queued job failed after all retries', $details);
+            rescue(fn () => $this->app->make(ActivityLogger::class)->log('queue.job_failed', null, $details), report: false);
+        });
     }
 
     private function configureMailTransports(): void
