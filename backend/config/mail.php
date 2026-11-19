@@ -79,6 +79,19 @@ return [
             'transport' => 'array',
         ],
 
+        // Transactional mail over Brevo's HTTP API (SMTP ports are blocked on some hosts, e.g. Railway's free plan).
+        'brevo' => [
+            'transport' => 'brevo',
+            'key' => env('BREVO_API_KEY'),
+        ],
+
+        // Real inboxes through one mailer, placeholder addresses (see below) through another.
+        'routed' => [
+            'transport' => 'routed',
+            'deliverable' => env('MAIL_DELIVERABLE_MAILER', 'brevo'),
+            'placeholder' => env('MAIL_PLACEHOLDER_MAILER', 'smtp'),
+        ],
+
         'failover' => [
             'transport' => 'failover',
             'mailers' => [
@@ -109,6 +122,9 @@ return [
     | used globally for all emails that are sent by your application.
     |
     */
+
+    // Domains that can never receive mail: the demo accounts' .test addresses and the reserved example domains.
+    'placeholder_domains' => ['test', 'example', 'invalid', 'localhost', 'example.com', 'example.net', 'example.org'],
 
     'from' => [
         'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),

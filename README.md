@@ -82,6 +82,7 @@ cd frontend && cp .env.example .env.local && npm install && npm run dev
 | `BFF_SHARED_SECRET` | Shared with the Next.js server so the API believes the visitor IP it forwards (set the same value on both sides). |
 | `CLIENT_IP_HEADER` | Behind an edge that overwrites a client-IP header (Railway: `X-Real-IP`), name it here. |
 | `CACHE_STORE`, `QUEUE_CONNECTION`, `REDIS_*` | Redis for cache, queue and rate limits (defaults in `.env.example`). |
+| `MAIL_MAILER`, `BREVO_API_KEY`, `MAIL_FROM_ADDRESS` | `smtp` sends everything to Mailpit (local default). `routed` (production) sends real inboxes through Brevo's HTTP API and demo addresses (`.test`, `example.com`) to Mailpit, so seeded accounts never bounce. The from address must be a sender verified in Brevo. |
 | `MEDIA_DRIVER`, `CLOUDINARY_URL`, `CLOUDINARY_FOLDER` | `local` (public disk, the default) or `cloudinary` for product and category images on Cloudinary's CDN, resized per screen. `CLOUDINARY_URL` is `cloudinary://<api_key>:<api_secret>@<cloud_name>` from the Cloudinary console (free plan, no card). |
 | `SCOUT_DRIVER`, `MEILISEARCH_*` | `meilisearch`, or `database` for the built-in matcher (no extra service). Both handle typos and partial words. |
 

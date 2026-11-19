@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Mail\Transport\RecipientRoutingTransport;
 use App\Models\Category;
 use App\Models\Coupon;
 use App\Models\Customer;
@@ -20,11 +21,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use InvalidArgumentException;
 use Stripe\StripeClient;
+use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoTransportFactory;
+use Symfony\Component\Mailer\Transport\Dsn;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -71,6 +78,26 @@ class AppServiceProvider extends ServiceProvider
         Gate::before(fn ($user) => $user instanceof Staff && $user->isSuperAdmin() ? true : null);
 
         $this->configureRateLimiting();
+        $this->configureMailTransports();
+    }
+
+    private function configureMailTransports(): void
+    {
+        Mail::extend('brevo', function (array $config) {
+            if (empty($config['key'])) {
+                throw new InvalidArgumentException('MAIL_MAILER uses Brevo but BREVO_API_KEY is not set.');
+            }
+
+            $client = $this->app->bound(HttpClientInterface::class) ? $this->app->make(HttpClientInterface::class) : HttpClient::create(['timeout' => 15]);
+
+            return (new BrevoTransportFactory(null, $client))->create(new Dsn('brevo+api', 'default', $config['key']));
+        });
+
+        Mail::extend('routed', fn (array $config) => new RecipientRoutingTransport(
+            Mail::mailer($config['deliverable'])->getSymfonyTransport(),
+            Mail::mailer($config['placeholder'])->getSymfonyTransport(),
+            config('mail.placeholder_domains'),
+        ));
     }
 
     private function configureRateLimiting(): void

@@ -128,6 +128,11 @@ Staff can never set `paid` by hand. Cancelling a paid order restores stock (unde
   - An image that a past order shows is kept when it is removed from the product.
   - If Cloudinary is unreachable, the save fails with a 503 and nothing is half saved.
 
+## Email
+
+- **Transport:** emails are queued and sent by the worker. Production uses Brevo's HTTP API, because hosts like Railway's free plan block outbound SMTP.
+- **Routing:** the `routed` mailer sends each recipient to the right place. Real inboxes go through Brevo. Placeholder addresses (the demo accounts on `.test`, and the reserved example domains) go to Mailpit, so the demo inbox keeps working and nothing bounces off Brevo's reputation.
+
 ## Redis
 
 - **Queue:** emails, search indexing.
