@@ -5,9 +5,9 @@ namespace App\Http\Resources;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderStatusHistory;
+use App\Services\Media\MediaStorage;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
 
 /** @mixin Order */
 class OrderResource extends JsonResource
@@ -15,6 +15,7 @@ class OrderResource extends JsonResource
     public function toArray(Request $request): array
     {
         $isAdmin = $request->is('api/v1/admin/*');
+        $media = app(MediaStorage::class);
 
         return [
             'id' => $this->when($isAdmin, $this->id),
@@ -33,7 +34,7 @@ class OrderResource extends JsonResource
                 'product_slug' => $item->product?->slug,
                 'name' => $item->product_name,
                 'sku' => $item->product_sku,
-                'image' => $item->image_path ? Storage::disk('public')->url($item->image_path) : null,
+                'image' => $media->url($item->image_path),
                 'color' => $item->color,
                 'size' => $item->size,
                 'unit_price_cents' => $item->unit_price_cents,

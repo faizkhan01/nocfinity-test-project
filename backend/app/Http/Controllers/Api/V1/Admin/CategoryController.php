@@ -7,14 +7,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CategoryRequest;
 use App\Models\Category;
 use App\Services\ActivityLogger;
+use App\Services\Media\MediaStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class CategoryController extends Controller
 {
-    public function __construct(private readonly ActivityLogger $activity) {}
+    public function __construct(private readonly ActivityLogger $activity, private readonly MediaStorage $media) {}
 
     public function index(): JsonResponse
     {
@@ -34,7 +34,7 @@ class CategoryController extends Controller
             ...$data,
             'slug' => $this->uniqueSlug($data['name']),
             'sort_order' => $data['sort_order'] ?? 0,
-            'image_path' => $request->file('image')?->store('categories', 'public'),
+            'image_path' => $request->hasFile('image') ? $this->media->store($request->file('image'), 'categories') : null,
         ]);
         $this->activity->log('category.created', $category);
 
@@ -49,12 +49,17 @@ class CategoryController extends Controller
             $data['slug'] = $this->uniqueSlug($data['name'], $category->id);
         }
 
+        $previousImage = $category->image_path;
         if ($request->hasFile('image')) {
-            $category->image_path && Storage::disk('public')->delete($category->image_path);
-            $data['image_path'] = $request->file('image')->store('categories', 'public');
+            $data['image_path'] = $this->media->store($request->file('image'), 'categories');
         }
 
         $category->update($data);
+
+        // The old image goes only once the new one is saved.
+        if ($request->hasFile('image')) {
+            $this->media->delete($previousImage);
+        }
         $this->activity->log('category.updated', $category);
 
         return response()->json(['data' => $this->present($category->loadCount('products'))]);
@@ -70,7 +75,7 @@ class CategoryController extends Controller
             throw new ApiException('This category still has products. Move them or deactivate the category instead.', 'category_has_products', 409);
         }
 
-        $category->image_path && Storage::disk('public')->delete($category->image_path);
+        $this->media->delete($category->image_path);
         $category->delete();
         $this->activity->log('category.deleted', null, ['category' => $category->only('id', 'name')]);
 

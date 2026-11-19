@@ -4,9 +4,9 @@ namespace Database\Seeders;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Services\Media\MediaStorage;
 use Illuminate\Database\Seeder;
 use Illuminate\Http\File;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class CatalogSeeder extends Seeder
@@ -45,7 +45,7 @@ class CatalogSeeder extends Seeder
         ['Mandarin Collar Linen Shirt', 'Shirts', 205, null, 'formal', ['Green'], ['Medium', 'Large'], ['vertical-striped-shirt'], false, 28, 3],
     ];
 
-    public function run(): void
+    public function run(MediaStorage $media): void
     {
         $categories = [];
         foreach (array_keys(self::TREE) as $i => $parentName) {
@@ -82,7 +82,7 @@ class CatalogSeeder extends Seeder
             $product->save();
 
             foreach ($images as $position => $image) {
-                $stored[$image] ??= Storage::disk('public')->putFileAs('products/seed', new File(database_path("seeders/images/products/{$image}.jpg")), "{$image}.jpg");
+                $stored[$image] ??= $media->store(new File(database_path("seeders/images/products/{$image}.jpg")), 'products/seed', $image);
                 $product->images()->create(['path' => $stored[$image], 'alt' => $name, 'sort_order' => $position]);
             }
         }
