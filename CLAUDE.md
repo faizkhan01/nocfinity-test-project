@@ -14,7 +14,9 @@ E-commerce test project: Laravel 12 REST API (`backend/`) + Next.js App Router s
   - `docker compose run --rm --no-deps -T -e CONTAINER_ROLE=cli app php artisan <cmd>`
   - `docker compose run --rm --no-deps -T -e CONTAINER_ROLE=cli app composer <cmd>`
   - Tests: `docker compose run --rm -T -e CONTAINER_ROLE=cli app php artisan test`
-- Frontend: `cd frontend && npm run dev | build | lint | typecheck`.
+- Frontend: `cd frontend && npm run dev | build | lint | typecheck | test`.
+- End-to-end: start the stack with `docker-compose.e2e.yml` on top, then `cd frontend && npm run e2e` (see README).
+- New logic gets a unit test next to it (`*.test.ts`); new user flows get a Playwright spec in `frontend/e2e/`.
 - Verify every feature by running it (tests, curl or the browser), not only by building it.
 
 ## Git

@@ -137,16 +137,48 @@ stripe listen --forward-to localhost:8000/api/v1/webhooks/stripe
 
 ## Tests
 
+Every push and pull request runs the [CI pipeline](.github/workflows/ci.yml): backend style and tests, frontend lint, types, unit tests and build, and then the end-to-end suite against the full Docker Compose stack.
+
+### Backend: 56 feature tests
+
 ```bash
 docker compose exec app php artisan test
 ```
 
-There are 54 feature tests. They run against a separate MySQL database (`shop_testing`) with a fake payment gateway, and cover:
-- **Checkout and money:** the full flow, ignoring client-sent prices and totals, overselling while a payment is in flight, declined cards, amount mismatches, idempotent capture, expired coupons and coupon usage limits under concurrency, and refunds with stock restored on cancel.
-- **Access and security:** IDOR, login lockout, customer/admin guard separation, permission middleware, Super Admin protections and catalog filters.
+They run against a separate MySQL database (`shop_testing`) with a fake payment gateway, and cover:
+- **Checkout and money:** the full flow, ignoring client-sent prices and totals, overselling while a payment is in flight, declined cards, amount mismatches, idempotent capture, expired coupons and coupon usage limits under concurrency, parallel checkouts, and refunds with stock restored on cancel.
+- **Access and security:** IDOR, login lockout, rate limits, customer/admin guard separation, permission middleware, Super Admin protections and catalog filters.
+- **Search:** partial words, typos, plurals, colours, categories and synonyms.
 - **Admin smoke test:** every admin read endpoint is rendered against the full seed data.
 
-The frontend is type-checked and linted with `npm run lint` and `npx tsc --noEmit`, and `next build` runs both. The main flows were also run end to end in a real browser against Stripe test mode: guest cart merging into the account at login, card checkout and declines, admin product create/edit, order fulfilment emails, and permission matrix changes.
+### Frontend: 79 unit tests (Vitest and Testing Library)
+
+```bash
+cd frontend
+npm test                # or npm run test:coverage
+```
+
+They cover formatting, shop filter URLs, form validation and safe redirects, visitor IP headers, the API client, the route guards and CSP, the BFF proxy (CSRF, httpOnly token cookies, path checks), and the search box, quantity stepper, price and pagination components. The logic layer must keep at least 90% line coverage.
+
+### End to end: 31 Playwright tests
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build --wait
+cd frontend && npx playwright install chromium
+E2E_STRIPE=1 MAILPIT_URL=http://localhost:8025 npm run e2e
+```
+
+- **Storefront:** search as you type and typo tolerance, filters and sorting in the URL, guest cart, quantities, coupons, and a 404 for unknown products.
+- **Accounts:** sign-in redirects, client-side validation, wrong passwords, open-redirect protection, the guest cart merging on sign-up, and httpOnly session cookies.
+- **Checkout:** a declined card, then a real Stripe test-mode payment that ends as a paid order with a confirmation email in Mailpit.
+- **Admin:** separate staff sessions, sign-in, permissions for the Support role (in the UI and the API), moving an order along its lifecycle, dark mode, and the protected Super Admin role.
+- **Mobile:** key pages fit a phone screen, and the mobile search works.
+
+Notes on running them:
+- The e2e override raises the per-IP rate limits, because every request comes from one machine.
+- The checkout specs need Stripe test keys in `backend/.env` and `E2E_STRIPE=1`; otherwise they are skipped.
+- In CI they use the `STRIPE_TEST_PUBLISHABLE_KEY` and `STRIPE_TEST_SECRET_KEY` repository secrets when they are set.
+- On failure, CI uploads the Playwright report with traces, screenshots and videos.
 
 ## Feature checklist
 
@@ -173,7 +205,7 @@ The frontend is type-checked and linted with `npm run lint` and `npx tsc --noEmi
 | Bonus | Status |
 | --- | --- |
 | Docker one-command run | ✅ |
-| Feature tests for checkout, stock and RBAC | ✅ |
+| Feature tests for checkout, stock and RBAC | ✅ plus frontend unit tests, Playwright end-to-end tests and a CI pipeline |
 | Guest cart merged on login | ✅ (server-side guest cart identified by an httpOnly cookie) |
 | Product reviews and ratings | ✅ verified buyers only, with moderation |
 | Email verification | ✅ signed link, resend from the account page |
