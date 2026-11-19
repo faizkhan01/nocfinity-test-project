@@ -6,7 +6,8 @@ E-commerce test project: Laravel 12 REST API (`backend/`) + Next.js App Router s
 
 - Backend: Laravel 12, PHP 8.4, Sanctum bearer tokens, MySQL 8, Stripe PHP SDK. Runs in Docker (`docker compose up`).
 - Frontend: Next.js 15 App Router, TypeScript (strict), Tailwind CSS v4. Talks to Laravel only through the REST API; no Blade views for UI.
-- Mail: Mailpit (SMTP `1025`, UI `http://localhost:8025`).
+- Mail: Mailpit locally (SMTP `1025`, UI `http://localhost:8025`); Brevo in production through the `routed` mailer, with demo `.test` addresses still going to Mailpit.
+- Images: `MediaStorage` (public disk locally, Cloudinary in production with `MEDIA_DRIVER=cloudinary`).
 
 ## Running things
 
@@ -31,6 +32,8 @@ E-commerce test project: Laravel 12 REST API (`backend/`) + Next.js App Router s
 - Small, focused classes. Business rules live in `app/Services` (or Actions), not in controllers.
 - Controllers stay thin: validate with a FormRequest, call a service, return an API Resource.
 - Name things for the domain (`OrderStatus::Shipped`, `StockService::reserve`), not the mechanism.
+- Store, show and delete images only through `MediaStorage` (never `Storage::disk('public')` directly), and render API images with the frontend's `MediaImage`.
+- Every email is queued: mailables and notifications implement `ShouldQueue` and call `afterCommit()`. Auth emails go on the `high` queue.
 - Frontend: server components by default; add `"use client"` only where interaction needs it. Shared UI lives in `src/components`.
 
 ## API conventions

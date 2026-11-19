@@ -138,8 +138,8 @@ Staff can never set `paid` by hand. Cancelling a paid order restores stock (unde
 
 ## Redis
 
-- **Queue:** emails, search indexing.
-- **Cache:** the storefront category tree and filter facets. Both are flushed by model events when a category, or a product's facet fields, change; a stock change doesn't flush them.
+- **Queue:** emails and search indexing, with auth emails on a `high` queue that is always drained first.
+- **Cache:** the storefront category tree, the filter facets and the built-in search's term index. They are flushed by model events when a category, or a product's facet or search fields, change; a stock change doesn't flush them.
 - **Rate limits and lockouts:** login lockouts, 2FA challenges and the API, auth and checkout limits all count in Redis using atomic increments.
 - **Databases:** Laravel keeps the queue in Redis database 0 and the cache in database 1.
 

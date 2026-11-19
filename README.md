@@ -10,6 +10,7 @@ A full-stack store built from the Figma *E-commerce Website Template* (SHOP.CO):
 | API | Laravel 12 (PHP 8.4), Sanctum bearer tokens, MySQL 8, Stripe PHP SDK |
 | Web | Next.js 15 (App Router) + TypeScript + Tailwind CSS v4, TanStack Query, Stripe Elements |
 | Infra | Docker Compose: php-fpm, nginx, MySQL, **Redis** (cache, queue, rate limits), **Meilisearch** (product search), queue worker, scheduler, Mailpit, Next.js |
+| Production services | **Cloudinary** (image storage and resizing CDN), **Brevo** (email to real inboxes) |
 
 ## Live demo
 
@@ -18,9 +19,9 @@ A full-stack store built from the Figma *E-commerce Website Template* (SHOP.CO):
 | Storefront | https://nocfinity-shop.vercel.app |
 | Admin panel | https://nocfinity-shop.vercel.app/admin |
 | REST API | https://api-production-c1887df3.up.railway.app/api/v1 |
-| Mailpit (demo inbox, password-protected) | https://mailpit-production-c1dd5411.up.railway.app |
+| Mailpit (demo inbox for the seeded `.test` accounts, password-protected) | https://mailpit-production-c1dd5411.up.railway.app |
 
-The demo accounts below work on the live site too. Payments run in Stripe **test mode**, so use the test cards.
+The demo accounts below work on the live site too. Payments run in Stripe **test mode**, so use the test cards. Emails to the demo accounts land in Mailpit; sign up with a real address to receive them in your own inbox.
 
 More detail lives in two companion documents:
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): how totals, stock and RBAC are secured.
@@ -139,7 +140,7 @@ stripe listen --forward-to localhost:8000/api/v1/webhooks/stripe
 
 ## Tests
 
-### Backend: 56 feature tests
+### Backend: 72 feature tests
 
 ```bash
 docker compose exec app php artisan test
@@ -149,16 +150,17 @@ They run against a separate MySQL database (`shop_testing`) with a fake payment 
 - **Checkout and money:** the full flow, ignoring client-sent prices and totals, overselling while a payment is in flight, declined cards, amount mismatches, idempotent capture, expired coupons and coupon usage limits under concurrency, parallel checkouts, and refunds with stock restored on cancel.
 - **Access and security:** IDOR, login lockout, rate limits, customer/admin guard separation, permission middleware, Super Admin protections and catalog filters.
 - **Search:** partial words, typos, plurals, colours, categories and synonyms.
+- **Images and email:** Cloudinary uploads (request signing, cleanup after a failed save, images kept for past orders, outages as 503, moving old images), and email (Brevo's API, routing demo addresses to Mailpit, every email queued after commit on the right queue).
 - **Admin smoke test:** every admin read endpoint is rendered against the full seed data.
 
-### Frontend: 79 unit tests (Vitest and Testing Library)
+### Frontend: 83 unit tests (Vitest and Testing Library)
 
 ```bash
 cd frontend
 npm test                # or npm run test:coverage
 ```
 
-They cover formatting, shop filter URLs, form validation and safe redirects, visitor IP headers, the API client, the route guards and CSP, the BFF proxy (CSRF, httpOnly token cookies, path checks), and the search box, quantity stepper, price and pagination components. The logic layer must keep at least 90% line coverage.
+They cover formatting, shop filter URLs, form validation and safe redirects, visitor IP headers, the API client, the route guards and CSP, the BFF proxy (CSRF, httpOnly token cookies, path checks), the Cloudinary image loader, and the search box, quantity stepper, price and pagination components. The logic layer must keep at least 90% line coverage.
 
 ### End to end: 31 Playwright tests
 
@@ -219,15 +221,19 @@ Notes on running them:
 The live demo runs on two platforms.
 
 **Railway** (`nocfinity-shop` project):
-- **`api`:** `backend/Dockerfile.production`. FrankenPHP on `$PORT`; caches config and routes, migrates, seeds an empty database and publishes the demo images on boot. A persistent volume is mounted at `/app/storage/app/public` for uploads.
-- **`worker`:** the same image with `CONTAINER_ROLE=worker`. Runs `queue:work` (emails) and the scheduler (expiring unpaid orders, pruning guest carts).
+- **`api`:** `backend/Dockerfile.production`. FrankenPHP on `$PORT`. On boot it caches config and routes, migrates, seeds an empty database, and moves any image still on the volume (`/app/storage/app/public`) to Cloudinary.
+- **`worker`:** the same image with `CONTAINER_ROLE=worker`. Runs `queue:work --queue=high,default` (emails, auth emails first, and search indexing) and the scheduler (expiring unpaid orders, pruning guest carts).
 - **`MySQL`:** Railway's managed MySQL, wired in with `DB_URL=${{MySQL.MYSQL_URL}}`.
-- **`mailpit`:** the demo inbox, behind basic auth (`MP_UI_AUTH`).
+- **`mailpit`:** the demo inbox for the seeded `.test` accounts, behind basic auth (`MP_UI_AUTH`).
 - **`Redis`:** cache, queue and rate limits for the API and the worker (`REDIS_URL=${{Redis.REDIS_URL}}`).
+
+Images and email use two free external services, set on both `api` and `worker`:
+- **Cloudinary:** `MEDIA_DRIVER=cloudinary`, `CLOUDINARY_URL`, `CLOUDINARY_FOLDER=nocfinity`.
+- **Brevo:** `MAIL_MAILER=routed`, `BREVO_API_KEY`, and `MAIL_FROM_ADDRESS` set to a sender verified in Brevo.
 
 Search runs on the built-in matcher (`SCOUT_DRIVER=database`), because Railway's free plan allows five services. It still finds partial words, typos and plurals. On a paid plan, add a Meilisearch service and set `SCOUT_DRIVER=meilisearch`, `MEILISEARCH_HOST` and `MEILISEARCH_KEY`; the API indexes the catalog on boot.
 
-**Vercel** (`nocfinity-shop`): the Next.js app, with `API_URL` pointing at the Railway API. `/storage/*` is rewritten to the API, so images stay same-origin.
+**Vercel** (`nocfinity-shop`): the Next.js app, with `API_URL` pointing at the Railway API. Cloudinary images load straight from its CDN; any image still on the API's disk is reached through the `/storage/*` rewrite, so it stays same-origin.
 
 To redeploy after changes:
 

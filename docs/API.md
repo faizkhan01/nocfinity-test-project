@@ -32,6 +32,7 @@
 | 422 | Validation or rule failure | `validation_error`, `coupon_invalid`, `invalid_transition`, `invalid_options` |
 | 429 | Rate limit or login lockout | `too_many_requests`, `too_many_attempts` |
 | 502 | Payment provider unreachable | `payment_provider_error` |
+| 503 | Image service unreachable during an upload; nothing is saved | `media_unavailable` |
 
 ## Customer authentication
 
@@ -56,6 +57,9 @@
 | GET | `/products` | Listing; query parameters below. |
 | GET | `/products/filters` | Facets for the filter panel: colours, sizes, styles, price range. |
 | GET | `/products/{slug}` | Detail: images, colours, sizes, stock, `stock_status`, category with parent. |
+
+Image URLs are absolute. With Cloudinary they look like `https://res.cloudinary.com/<cloud>/image/upload/f_auto,q_auto/v<version>/<id>`; a client can add a size in front, e.g. `.../upload/c_limit,w_400/f_auto,q_auto/...`.
+
 | GET | `/products/{slug}/related` | Up to 4 products from the same category. |
 | GET | `/products/{slug}/reviews` | `sort=latest\|highest\|lowest`, 6 per page. |
 | POST | `/products/{slug}/reviews` | Customer only: `rating` (1–5) and `comment`. Only after a delivered order containing the product, once per product. |
