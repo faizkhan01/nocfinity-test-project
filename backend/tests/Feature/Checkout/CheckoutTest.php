@@ -8,6 +8,7 @@ use App\Models\Coupon;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Product;
+use App\Services\Orders\OrderLifecycle;
 use App\Services\Payments\FakePaymentGateway;
 use App\Services\Payments\PaymentGateway;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -231,6 +232,26 @@ class CheckoutTest extends TestCase
         $this->getJson("/api/v1/orders/{$order->order_number}")->assertNotFound();
         $this->postJson("/api/v1/orders/{$order->order_number}/cancel")->assertNotFound();
         $this->getJson('/api/v1/orders')->assertOk()->assertJsonCount(0, 'data');
+    }
+
+    public function test_a_new_checkout_supersedes_an_unpaid_one_even_if_it_was_cancelled_in_parallel(): void
+    {
+        $product = Product::factory()->create(['stock' => 5]);
+        $this->actingAsCustomer();
+        $this->addToCart($product, 1);
+        $first = $this->checkout();
+
+        // Another tab's checkout cancels the same order between our read and our lock.
+        $stale = Order::findOrFail($first->id);
+        $this->app->make(OrderLifecycle::class)->cancel($first, 'Superseded by a newer checkout', notify: false);
+        $again = $this->app->make(OrderLifecycle::class)->cancel($stale, 'Superseded by a newer checkout', notify: false, onlyFrom: OrderStatus::Pending);
+
+        $this->assertSame(OrderStatus::Cancelled, $again->status);
+        $this->assertSame(1, $first->statusHistory()->where('to_status', OrderStatus::Cancelled->value)->count());
+
+        $second = $this->checkout();
+        $this->assertSame(OrderStatus::Pending, $second->status);
+        $this->assertSame(OrderStatus::Cancelled, $first->fresh()->status);
     }
 
     public function test_guests_cannot_check_out(): void

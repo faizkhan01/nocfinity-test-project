@@ -117,6 +117,6 @@ class CheckoutService
     private function cancelPreviousPendingOrders(Customer $customer): void
     {
         $customer->orders()->where('status', OrderStatus::Pending)->get()
-            ->each(fn (Order $order) => $this->lifecycle->cancel($order, 'Superseded by a newer checkout', notify: false));
+            ->each(fn (Order $order) => $this->lifecycle->cancel($order, 'Superseded by a newer checkout', notify: false, onlyFrom: OrderStatus::Pending));
     }
 }

@@ -58,12 +58,20 @@ class OrderLifecycle
         return $order;
     }
 
-    /** Cancels the order, puts paid stock back, and voids or refunds the payment. */
-    public function cancel(Order $order, string $reason, ?Staff $actor = null, bool $notify = true): Order
+    /**
+     * Cancels the order, puts paid stock back, and voids or refunds the payment.
+     * With `$onlyFrom`, an order that has meanwhile left that status (e.g. a parallel checkout cancelled it) is left alone.
+     */
+    public function cancel(Order $order, string $reason, ?Staff $actor = null, bool $notify = true, ?OrderStatus $onlyFrom = null): Order
     {
-        $order = DB::transaction(function () use ($order, $reason, $actor) {
+        $changed = false;
+        $order = DB::transaction(function () use ($order, $reason, $actor, $onlyFrom, &$changed) {
             $order = Order::with('items', 'latestPayment')->whereKey($order->id)->lockForUpdate()->firstOrFail();
+            if ($onlyFrom !== null && $order->status !== $onlyFrom) {
+                return $order;
+            }
             $this->assertTransition($order, OrderStatus::Cancelled);
+            $changed = true;
 
             $from = $order->status;
 
@@ -86,7 +94,7 @@ class OrderLifecycle
             return $order;
         });
 
-        if ($notify) {
+        if ($notify && $changed) {
             $this->notifyCustomer($order);
         }
 
