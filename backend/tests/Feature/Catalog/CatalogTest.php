@@ -17,7 +17,7 @@ class CatalogTest extends TestCase
         $tees = Category::factory()->create(['slug' => 'tees', 'parent_id' => $men->id]);
         Product::factory()->create(['category_id' => $tees->id, 'name' => 'Red Tee', 'price_cents' => 5000, 'colors' => [['name' => 'Red', 'hex' => '#F50606']]]);
         Product::factory()->create(['category_id' => $tees->id, 'name' => 'Cheap Sale Tee', 'price_cents' => 9000, 'discount_price_cents' => 2000]);
-        Product::factory()->create(['name' => 'Elsewhere']);
+        Product::factory()->create(['name' => 'Elsewhere', 'price_cents' => 20000]);
         Product::factory()->create(['category_id' => $tees->id, 'name' => 'Hidden', 'is_active' => false]);
 
         $this->getJson('/api/v1/products?category=men')->assertJsonPath('meta.total', 2);
