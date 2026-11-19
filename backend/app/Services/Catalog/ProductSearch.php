@@ -23,6 +23,9 @@ class ProductSearch
 
     private const MAX_SEARCH_HITS = 500;
 
+    /** Scout drivers that only do exact word matching; the built-in matcher replaces them. */
+    private const BUILT_IN_DRIVERS = ['database', 'collection', 'null'];
+
     public const SIZE_ORDER = ['XX-Small', 'X-Small', 'Small', 'Medium', 'Large', 'X-Large', 'XX-Large', '3X-Large', '4X-Large'];
 
     /** @param array<string, mixed> $filters */
@@ -45,13 +48,15 @@ class ProductSearch
             ->withQueryString();
     }
 
+    public function __construct(private readonly ProductMatcher $matcher) {}
+
     /**
-     * Matching product ids in relevance order from the configured Scout engine,
-     * or null when the engine is unavailable (the caller then falls back to LIKE).
+     * Matching product ids in relevance order: from Meilisearch (or another external engine) when one is
+     * configured, otherwise from the built-in forgiving matcher, which is also the fallback if the engine is down.
      *
-     * @return list<int>|null
+     * @return list<int>
      */
-    public function searchIds(string $search): ?array
+    public function searchIds(string $search): array
     {
         // An exact SKU is a lookup, not a fuzzy search ("SC-0009" would otherwise match every "SC-" SKU).
         if (preg_match('/^[a-z0-9]+(-[a-z0-9]+)+$/i', trim($search))) {
@@ -62,16 +67,19 @@ class ProductSearch
             }
         }
 
+        if (in_array(config('scout.driver'), self::BUILT_IN_DRIVERS, true)) {
+            return $this->matcher->search($search, self::MAX_SEARCH_HITS);
+        }
+
         try {
             return Product::search($search)->take(self::MAX_SEARCH_HITS)->keys()->map(fn ($id) => (int) $id)->values()->all();
         } catch (Throwable $e) {
-            Log::warning('Product search engine unavailable, falling back to LIKE', ['error' => $e->getMessage()]);
+            Log::warning('Product search engine unavailable, using the built-in matcher', ['error' => $e->getMessage()]);
 
-            return null;
+            return $this->matcher->search($search, self::MAX_SEARCH_HITS);
         }
     }
 
-    /** @param array<string, mixed> $filters */
     /** @param array<string, mixed> $filters @param list<int>|null $hits ids from the search engine */
     public function query(array $filters, ?array $hits = null): Builder
     {
@@ -79,13 +87,6 @@ class ProductSearch
             ->active()
             ->whereHas('category', fn (Builder $q) => $q->active())
             ->when($hits !== null, fn (Builder $q) => $q->whereIn('products.id', $hits ?: [0]))
-            ->when($hits === null && ! empty($filters['search']), function (Builder $q) use ($filters) {
-                $search = $filters['search'];
-                $term = '%'.addcslashes($search, '%_\\').'%';
-                $q->where(fn (Builder $q) => $q->where('name', 'like', $term)
-                    ->orWhere('short_description', 'like', $term)
-                    ->orWhere('sku', 'like', $term));
-            })
             ->when($filters['category'] ?? null, function (Builder $q, string $slug) {
                 $category = Category::active()->where('slug', $slug)->first();
                 $q->whereIn('category_id', $category?->selfAndChildIds() ?? [0]);

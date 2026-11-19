@@ -44,12 +44,14 @@ class CatalogTest extends TestCase
         $this->getJson('/api/v1/products?per_page=1000')->assertUnprocessable();
     }
 
-    public function test_search_treats_wildcards_literally(): void
+    public function test_search_symbols_are_never_wildcards(): void
     {
         Product::factory()->create(['name' => '100% Cotton Tee']);
         Product::factory()->create(['name' => 'Wool Jumper']);
 
-        $this->getJson('/api/v1/products?search=%25')->assertJsonPath('meta.total', 1);
+        $this->getJson('/api/v1/products?search=%25')->assertJsonPath('meta.total', 0);
+        $this->getJson('/api/v1/products?search=_')->assertJsonPath('meta.total', 0);
+        $this->getJson('/api/v1/products?search=100%25')->assertJsonPath('meta.total', 1);
     }
 
     public function test_inactive_products_are_not_reachable(): void

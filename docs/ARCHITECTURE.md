@@ -110,9 +110,13 @@ Staff can never set `paid` by hand. Cancelling a paid order restores stock (unde
 - **Indexing:** runs through the Redis queue, and only when a searchable field changes. A stock change from an order doesn't re-index.
 - **Sorting:** searches sort by relevance ("Best Match") unless the shopper picks another order.
 - **SKUs:** an exact SKU (`SC-0009`) is a direct database lookup, not a fuzzy search.
-- **Fallbacks:**
-  - Without Meilisearch, `SCOUT_DRIVER=database` uses a MySQL **FULLTEXT** index (`MATCH … AGAINST`) plus a SKU prefix match. Production runs this way on the Railway free plan.
-  - If the engine is unreachable, search degrades to a SQL `LIKE` query instead of failing.
+- **Without Meilisearch** (`SCOUT_DRIVER=database`, which production uses on the Railway free plan), a built-in matcher (`ProductMatcher`) is just as forgiving:
+  - It matches whole words, prefixes while typing ("shir"), singular and plural ("jean"), joined or hyphenated forms ("tshirt", "t-shirt"), and typos ("shrit", "poloo", "skiny"). As a last resort it also matches words that sound alike ("grafic").
+  - Typos are only tried when no word starts with the query, so "shirt" never brings up shorts.
+  - It searches the name, SKU, colours, category (including the parent, e.g. "men shirt"), style and short description, plus a few synonyms from `config/shop.php` ("tee" = t-shirt).
+  - Products matching every query word come first. If none match all of them, the closest partial matches are shown instead of an empty page.
+  - The term index lives in Redis and is rebuilt when a searchable product or category field changes. A search takes about 1 ms on the seeded catalog. Past tens of thousands of products, switch to Meilisearch.
+- **Fallback:** if Meilisearch is unreachable, search uses the built-in matcher instead of failing.
 
 ## Redis
 

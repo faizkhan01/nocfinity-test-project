@@ -11,8 +11,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Laravel\Scout\Attributes\SearchUsingFullText;
-use Laravel\Scout\Attributes\SearchUsingPrefix;
 use Laravel\Scout\Searchable;
 
 class Product extends Model
@@ -53,7 +51,7 @@ class Product extends Model
     protected static function booted(): void
     {
         static::created(fn () => CatalogCache::flush());
-        static::updated(fn (self $product) => $product->wasChanged(self::FACET_FIELDS) && CatalogCache::flush());
+        static::updated(fn (self $product) => $product->wasChanged([...self::FACET_FIELDS, ...self::SEARCH_FIELDS]) && CatalogCache::flush());
         static::deleted(fn () => CatalogCache::flush());
         static::restored(fn () => CatalogCache::flush());
     }
@@ -75,15 +73,8 @@ class Product extends Model
         return ($this->wasRecentlyCreated && $this->getChanges() === []) || $this->wasChanged(self::SEARCH_FIELDS);
     }
 
-    #[SearchUsingFullText(['name', 'short_description', 'description'])]
-    #[SearchUsingPrefix(['sku'])]
     public function toSearchableArray(): array
     {
-        // The database driver queries these keys as columns, so it only gets real columns.
-        if (config('scout.driver') === 'database') {
-            return $this->only('name', 'short_description', 'description', 'sku');
-        }
-
         return [
             'id' => $this->id,
             'name' => $this->name,

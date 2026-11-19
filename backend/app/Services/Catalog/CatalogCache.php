@@ -12,6 +12,8 @@ class CatalogCache
 
     public const FACETS = 'catalog:facets';
 
+    public const SEARCH = 'catalog:search-index';
+
     private const TTL_SECONDS = 3600;
 
     public static function remember(string $key, Closure $callback): mixed
@@ -23,5 +25,6 @@ class CatalogCache
     {
         Cache::forget(self::CATEGORIES);
         Cache::forget(self::FACETS);
+        Cache::forget(self::SEARCH);
     }
 }

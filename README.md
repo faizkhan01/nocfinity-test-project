@@ -82,7 +82,7 @@ cd frontend && cp .env.example .env.local && npm install && npm run dev
 | `BFF_SHARED_SECRET` | Shared with the Next.js server so the API believes the visitor IP it forwards (set the same value on both sides). |
 | `CLIENT_IP_HEADER` | Behind an edge that overwrites a client-IP header (Railway: `X-Real-IP`), name it here. |
 | `CACHE_STORE`, `QUEUE_CONNECTION`, `REDIS_*` | Redis for cache, queue and rate limits (defaults in `.env.example`). |
-| `SCOUT_DRIVER`, `MEILISEARCH_*` | `meilisearch` (typo-tolerant search) or `database` (MySQL FULLTEXT). |
+| `SCOUT_DRIVER`, `MEILISEARCH_*` | `meilisearch`, or `database` for the built-in matcher (no extra service). Both handle typos and partial words. |
 
 The frontend reads only `API_URL` (where Laravel is reachable from the Next.js server) and, in Docker, `COOKIE_SECURE`.
 
@@ -141,7 +141,7 @@ stripe listen --forward-to localhost:8000/api/v1/webhooks/stripe
 docker compose exec app php artisan test
 ```
 
-There are 49 feature tests. They run against a separate MySQL database (`shop_testing`) with a fake payment gateway, and cover:
+There are 54 feature tests. They run against a separate MySQL database (`shop_testing`) with a fake payment gateway, and cover:
 - **Checkout and money:** the full flow, ignoring client-sent prices and totals, overselling while a payment is in flight, declined cards, amount mismatches, idempotent capture, expired coupons and coupon usage limits under concurrency, and refunds with stock restored on cancel.
 - **Access and security:** IDOR, login lockout, customer/admin guard separation, permission middleware, Super Admin protections and catalog filters.
 - **Admin smoke test:** every admin read endpoint is rendered against the full seed data.
@@ -193,7 +193,7 @@ The live demo runs on two platforms.
 - **`mailpit`:** the demo inbox, behind basic auth (`MP_UI_AUTH`).
 - **`Redis`:** cache, queue and rate limits for the API and the worker (`REDIS_URL=${{Redis.REDIS_URL}}`).
 
-Search runs on MySQL FULLTEXT (`SCOUT_DRIVER=database`), because Railway's free plan allows five services. On a paid plan, add a Meilisearch service and set `SCOUT_DRIVER=meilisearch`, `MEILISEARCH_HOST` and `MEILISEARCH_KEY`; the API indexes the catalog on boot.
+Search runs on the built-in matcher (`SCOUT_DRIVER=database`), because Railway's free plan allows five services. It still finds partial words, typos and plurals. On a paid plan, add a Meilisearch service and set `SCOUT_DRIVER=meilisearch`, `MEILISEARCH_HOST` and `MEILISEARCH_KEY`; the API indexes the catalog on boot.
 
 **Vercel** (`nocfinity-shop`): the Next.js app, with `API_URL` pointing at the Railway API. `/storage/*` is rewritten to the API, so images stay same-origin.
 

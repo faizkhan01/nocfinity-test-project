@@ -66,7 +66,7 @@
 
 | Parameter | Example | Notes |
 | --- | --- | --- |
-| `search` | `jeans` | Name, short description or SKU. Wildcards are literal. |
+| `search` | `jeans` | Name, SKU, colour, category, style or short description. Forgiving: partial words, typos and plurals match. Symbols are never wildcards. |
 | `category` | `men` | Category slug; a parent includes its subcategories. |
 | `min_price`, `max_price` | `5000`, `20000` | Cents, applied to the discounted price. |
 | `colors`, `sizes`, `styles` | `Red,Blue` or `colors[]=Red` | Any of the listed values. |

@@ -23,4 +23,13 @@ return [
 
     // Display order of colour swatches in the storefront filters (matches the design palette).
     'color_order' => ['Green', 'Red', 'Yellow', 'Orange', 'Cyan', 'Blue', 'Purple', 'Pink', 'White', 'Black'],
+
+    // Words treated as the same thing by the built-in product search.
+    'search_synonyms' => [
+        ['tee', 'tshirt'],
+        ['jean', 'denim'],
+        ['trouser', 'pant'],
+        ['hoodie', 'hoody', 'sweatshirt'],
+        ['sneaker', 'trainer'],
+    ],
 ];
