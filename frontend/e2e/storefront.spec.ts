@@ -51,6 +51,22 @@ test.describe("storefront", () => {
     expect(await page.getByRole("main").getByRole("link").allInnerTexts()).toEqual(before);
   });
 
+  test("the product photo zooms in where the mouse points", async ({ page }) => {
+    await page.goto(`/product/${PRODUCT.slug}`);
+    const frame = page.locator("[class*='cursor-zoom-in']").first();
+    const box = (await frame.boundingBox())!;
+
+    await page.mouse.move(box.x + box.width * 0.25, box.y + box.height * 0.3);
+    await expect(frame).toHaveAttribute("data-zoomed", "true");
+    const layer = page.getByTestId("zoom-layer");
+    await expect(layer).toHaveCSS("opacity", "1");
+    expect(await layer.evaluate((el) => el.style.transform)).toBe("scale(2.2)");
+    expect(await frame.evaluate((el) => el.style.getPropertyValue("--zoom-origin"))).toMatch(/^2\d\.\d+% 3\d\.\d+%$/);
+
+    await page.mouse.move(box.x + box.width + 200, box.y);
+    await expect(frame).not.toHaveAttribute("data-zoomed");
+  });
+
   test("an unknown product is a 404", async ({ page }) => {
     const response = await page.goto("/product/does-not-exist");
     expect(response?.status()).toBe(404);

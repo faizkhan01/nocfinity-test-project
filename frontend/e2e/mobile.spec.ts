@@ -9,6 +9,12 @@ test.describe("mobile layout", () => {
     });
   }
 
+  test("tapping the product photo does not zoom it", async ({ page }) => {
+    await page.goto("/product/one-life-graphic-t-shirt");
+    await page.getByRole("img", { name: "One Life Graphic T-shirt" }).first().tap();
+    await expect(page.getByTestId("zoom-layer")).toHaveCount(0);
+  });
+
   test("the search opens from the header icon and suggests products", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Search", exact: true }).click();

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { assetUrl, cn } from "@/lib/format";
 import type { Product } from "@/lib/types";
 import { MediaImage } from "@/components/ui/media-image";
+import { ZoomImage } from "./zoom-image";
 
 export function Gallery({ product }: { product: Product }) {
   const images = product.images.length ? product.images : [{ id: 0, url: product.image ?? "", alt: product.name }];
@@ -12,11 +13,15 @@ export function Gallery({ product }: { product: Product }) {
 
   return (
     <div className="flex flex-col gap-3 lg:flex-row-reverse lg:gap-[14px]">
-      <div className="relative aspect-[358/290] w-full overflow-hidden rounded-[20px] bg-product lg:aspect-[444/530] lg:w-[444px]">
-        {current && (
-          <MediaImage src={current} alt={images[active].alt} fill priority sizes="(min-width: 1024px) 444px, 100vw" className="object-cover" />
-        )}
-      </div>
+      {current ? (
+        <ZoomImage
+          src={current}
+          alt={images[active].alt}
+          className="aspect-[358/290] w-full rounded-[20px] bg-product lg:aspect-[444/530] lg:w-[444px]"
+        />
+      ) : (
+        <div className="aspect-[358/290] w-full rounded-[20px] bg-product lg:aspect-[444/530] lg:w-[444px]" />
+      )}
       {images.length > 1 && (
         <ul className="grid grid-cols-3 gap-3 lg:flex lg:w-[152px] lg:flex-col lg:gap-[14px]">
           {images.map((image, i) => {

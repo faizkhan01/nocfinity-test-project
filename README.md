@@ -153,16 +153,16 @@ They run against a separate MySQL database (`shop_testing`) with a fake payment 
 - **Images and email:** Cloudinary uploads (request signing, cleanup after a failed save, images kept for past orders, outages as 503, moving old images), and email (Brevo's API, routing demo addresses to Mailpit, every email queued after commit on the right queue).
 - **Admin smoke test:** every admin read endpoint is rendered against the full seed data.
 
-### Frontend: 83 unit tests (Vitest and Testing Library)
+### Frontend: 87 unit tests (Vitest and Testing Library)
 
 ```bash
 cd frontend
 npm test                # or npm run test:coverage
 ```
 
-They cover formatting, shop filter URLs, form validation and safe redirects, visitor IP headers, the API client, the route guards and CSP, the BFF proxy (CSRF, httpOnly token cookies, path checks), the Cloudinary image loader, and the search box, quantity stepper, price and pagination components. The logic layer must keep at least 90% line coverage.
+They cover formatting, shop filter URLs, form validation and safe redirects, visitor IP headers, the API client, the route guards and CSP, the BFF proxy (CSRF, httpOnly token cookies, path checks), the Cloudinary image loader, the product photo zoom, and the search box, quantity stepper, price and pagination components. The logic layer must keep at least 90% line coverage.
 
-### End to end: 31 Playwright tests
+### End to end: 33 Playwright tests
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build --wait
@@ -170,11 +170,11 @@ cd frontend && npx playwright install chromium
 E2E_STRIPE=1 MAILPIT_URL=http://localhost:8025 npm run e2e
 ```
 
-- **Storefront:** search as you type and typo tolerance, filters and sorting in the URL, guest cart, quantities, coupons, and a 404 for unknown products.
+- **Storefront:** search as you type and typo tolerance, filters and sorting in the URL, the product photo zoom, guest cart, quantities, coupons, and a 404 for unknown products.
 - **Accounts:** sign-in redirects, client-side validation, wrong passwords, open-redirect protection, the guest cart merging on sign-up, and httpOnly session cookies.
 - **Checkout:** a declined card, then a real Stripe test-mode payment that ends as a paid order with a confirmation email in Mailpit.
 - **Admin:** separate staff sessions, sign-in, permissions for the Support role (in the UI and the API), moving an order along its lifecycle, dark mode, and the protected Super Admin role.
-- **Mobile:** key pages fit a phone screen, and the mobile search works.
+- **Mobile:** key pages fit a phone screen, the mobile search works, and tapping a photo does not zoom it.
 
 Notes on running them:
 - The e2e override raises the per-IP rate limits, because every request comes from one machine.
