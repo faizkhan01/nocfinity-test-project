@@ -140,7 +140,7 @@ stripe listen --forward-to localhost:8000/api/v1/webhooks/stripe
 
 ## Tests
 
-### Backend: 72 feature tests
+### Backend: 74 feature tests
 
 ```bash
 docker compose exec app php artisan test
@@ -148,7 +148,7 @@ docker compose exec app php artisan test
 
 They run against a separate MySQL database (`shop_testing`) with a fake payment gateway, and cover:
 - **Checkout and money:** the full flow, ignoring client-sent prices and totals, overselling while a payment is in flight, declined cards, amount mismatches, idempotent capture, expired coupons and coupon usage limits under concurrency, parallel checkouts, and refunds with stock restored on cancel.
-- **Access and security:** IDOR, login lockout, rate limits, customer/admin guard separation, permission middleware, Super Admin protections and catalog filters.
+- **Access and security:** IDOR, login lockout, rate limits, visitor IP and https handling behind the proxy, customer/admin guard separation, permission middleware, Super Admin protections and catalog filters.
 - **Search:** partial words, typos, plurals, colours, categories and synonyms.
 - **Images and email:** Cloudinary uploads (request signing, cleanup after a failed save, images kept for past orders, outages as 503, moving old images), and email (Brevo's API, routing demo addresses to Mailpit, every email queued after commit on the right queue).
 - **Admin smoke test:** every admin read endpoint is rendered against the full seed data.
@@ -183,7 +183,7 @@ Notes on running them:
 
 ## Feature checklist
 
-**Storefront (from Figma, 1440px and 390px):** home, category listing with the filter panel (mobile bottom sheet), product detail with gallery, options and reviews, and cart with promo codes. Checkout, order confirmation, My Orders, order detail, auth pages and account use the same design language.
+**Storefront (from Figma, 1440px and 390px):** home, category listing with the filter panel (mobile bottom sheet), product detail with gallery (hover to zoom), options and reviews, and cart with promo codes. Checkout, order confirmation, My Orders, order detail, auth pages and account use the same design language.
 
 **Admin:**
 - Dashboard (stat cards, 30-day sales chart, recent orders, low stock).
@@ -222,7 +222,7 @@ The live demo runs on two platforms.
 
 **Railway** (`nocfinity-shop` project):
 - **`api`:** `backend/Dockerfile.production`. FrankenPHP on `$PORT`. On boot it caches config and routes, migrates, seeds an empty database, and moves any image still on the volume (`/app/storage/app/public`) to Cloudinary.
-- **`worker`:** the same image with `CONTAINER_ROLE=worker`. Runs `queue:work --queue=high,default` (emails, auth emails first, and search indexing) and the scheduler (expiring unpaid orders, pruning guest carts).
+- **`worker`:** the same image with `CONTAINER_ROLE=worker`. Runs `queue:work --queue=high,default` (emails, auth emails first, and search indexing) and the scheduler (expiring unpaid orders, pruning guest carts). The worker exits every hour to stay fresh, and the start script restarts it in place.
 - **`MySQL`:** Railway's managed MySQL, wired in with `DB_URL=${{MySQL.MYSQL_URL}}`.
 - **`mailpit`:** the demo inbox for the seeded `.test` accounts, behind basic auth (`MP_UI_AUTH`).
 - **`Redis`:** cache, queue and rate limits for the API and the worker (`REDIS_URL=${{Redis.REDIS_URL}}`).

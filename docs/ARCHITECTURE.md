@@ -123,6 +123,7 @@ Staff can never set `paid` by hand. Cancelling a paid order restores stock (unde
 - **Storage:** `MediaStorage` saves uploads on the public disk or, with `MEDIA_DRIVER=cloudinary`, on Cloudinary through signed Upload API calls. Originals are capped at 2000px on upload.
 - **References:** a stored value is either a disk path (`products/abc.jpg`) or `cloudinary:v<version>/<public_id>`. Both kinds resolve to URLs side by side, so switching drivers never breaks existing images, and `php artisan app:move-media-to-cloudinary` moves the old ones over (idempotent, with `--dry-run`).
 - **Resizing:** the API returns a Cloudinary URL with automatic format and quality. The frontend's `MediaImage` adds a width-limited resize per `srcset` entry, so a 48px search thumbnail and a 444px gallery image are both served at their own size from the CDN. Local uploads still use the Next.js optimizer.
+- **Zoom:** hovering the main product photo magnifies the spot under the mouse. A sharper copy (about 2.2 times the displayed width) is fetched only on the first hover; touch and keyboard users keep the plain photo.
 - **Consistency:**
   - Deletes run only after the database transaction commits, and uploads from a save that fails are removed again.
   - An image that a past order shows is kept when it is removed from the product.
@@ -132,6 +133,7 @@ Staff can never set `paid` by hand. Cancelling a paid order restores stock (unde
 
 - **Always queued:** every email (verification, password reset, order updates) is a queued job, dispatched only after the database transaction commits, and sent by the worker. A slow or failing provider never slows a request or loses an email.
   - Auth emails go on a `high` queue that the worker (`--queue=high,default`) always drains first, so a reset link is not stuck behind order emails or search indexing.
+  - `queue:work` exits cleanly every hour (`--max-time`), and hosts such as Railway only restart a container that fails. The worker script therefore loops it, so the queue never stops.
   - Each email is retried 5 times, backing off over about 20 minutes, and ends in `failed_jobs` if the provider is still down.
 - **Transport:** production uses Brevo's HTTP API, because hosts like Railway's free plan block outbound SMTP.
 - **Routing:** the `routed` mailer sends each recipient to the right place. Real inboxes go through Brevo. Placeholder addresses (the demo accounts on `.test`, and the reserved example domains) go to Mailpit, so the demo inbox keeps working and nothing bounces off Brevo's reputation.
@@ -154,6 +156,8 @@ Rate limits and login lockouts are keyed by IP, so the API must see the real vis
 - **Direct API calls behind Railway:** the API uses `X-Real-IP`, which Railway's edge overwrites with the connecting address. It's trusted only when the request comes from Railway's internal proxy range (`TRUSTED_PROXIES=100.64.0.0/10`).
 
 Forged headers without the secret are ignored, so a client can't rotate fake IPs to escape a lockout. Tests cover all three cases.
+
+Replacing `REMOTE_ADDR` with the visitor's IP means the proxy's `X-Forwarded-Proto` and `Host` would stop being trusted, so the middleware keeps the scheme and host the proxy reported. Without that, the API saw plain `http` behind Railway's TLS edge, and email links signed by the worker (with the `https` `APP_URL`) failed with "Invalid signature". Regression tests cover both.
 
 Trusted proxies are read from config **at request time**. An earlier version read `env()` while handling requests, and once config was cached in production that silently returned the defaults, so the lockout never triggered. A regression test now covers it.
 
