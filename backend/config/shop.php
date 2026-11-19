@@ -13,6 +13,12 @@ return [
     // Unpaid orders older than this are cancelled and their payment intents voided.
     'pending_order_ttl_minutes' => (int) env('SHOP_PENDING_ORDER_TTL', 60),
 
+    // Pending orders older than this are checked against Stripe, so a payment the browser never confirmed still completes.
+    'reconcile_after_minutes' => (int) env('SHOP_RECONCILE_AFTER_MINUTES', 5),
+
+    // How long processed Stripe webhook events are kept.
+    'stripe_event_retention_days' => 30,
+
     'guest_cart_ttl_days' => 30,
 
     // The Super Admin account created by the seeders.
