@@ -1,0 +1,8 @@
+# End-to-end runs: every request comes from one IP, so the per-IP rate limits are raised.
+# docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build --wait
+services:
+  app:
+    environment:
+      RATE_LIMIT_API: 2000
+      RATE_LIMIT_AUTH: 200
+      RATE_LIMIT_CHECKOUT: 100
