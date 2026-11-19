@@ -48,6 +48,7 @@ describe("content security policy", () => {
     expect(first).toContain("frame-ancestors 'none'");
     expect(first).toContain("object-src 'none'");
     expect(first).toMatch(/script-src 'self' 'nonce-[^']+' https:\/\/js\.stripe\.com/);
+    expect(first).toMatch(/img-src [^;]*https:\/\/res\.cloudinary\.com/);
   });
 
   it("upgrades insecure requests only behind HTTPS", () => {

@@ -1,9 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 import { assetUrl, cn } from "@/lib/format";
 import type { ProductSummary } from "@/lib/types";
 import { Price } from "./price";
 import { RatingLine } from "./stars";
+import { MediaImage } from "@/components/ui/media-image";
 
 export function ProductCard({ product, className, priority }: { product: ProductSummary; className?: string; priority?: boolean }) {
   const image = assetUrl(product.image);
@@ -12,7 +12,7 @@ export function ProductCard({ product, className, priority }: { product: Product
     <Link href={`/product/${product.slug}`} className={cn("group flex flex-col", className)}>
       <div className="relative aspect-[295/298] overflow-hidden rounded-[13.4px] bg-product sm:rounded-card">
         {image && (
-          <Image
+          <MediaImage
             src={image}
             alt={product.name}
             fill

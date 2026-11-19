@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 import { assetUrl, cn } from "@/lib/format";
 import type { Product } from "@/lib/types";
+import { MediaImage } from "@/components/ui/media-image";
 
 export function Gallery({ product }: { product: Product }) {
   const images = product.images.length ? product.images : [{ id: 0, url: product.image ?? "", alt: product.name }];
@@ -14,7 +14,7 @@ export function Gallery({ product }: { product: Product }) {
     <div className="flex flex-col gap-3 lg:flex-row-reverse lg:gap-[14px]">
       <div className="relative aspect-[358/290] w-full overflow-hidden rounded-[20px] bg-product lg:aspect-[444/530] lg:w-[444px]">
         {current && (
-          <Image src={current} alt={images[active].alt} fill priority sizes="(min-width: 1024px) 444px, 100vw" className="object-cover" />
+          <MediaImage src={current} alt={images[active].alt} fill priority sizes="(min-width: 1024px) 444px, 100vw" className="object-cover" />
         )}
       </div>
       {images.length > 1 && (
@@ -33,7 +33,7 @@ export function Gallery({ product }: { product: Product }) {
                     i === active && "ring-1 ring-ink",
                   )}
                 >
-                  {src && <Image src={src} alt="" fill sizes="152px" className="object-cover" />}
+                  {src && <MediaImage src={src} alt="" fill sizes="152px" className="object-cover" />}
                 </button>
               </li>
             );

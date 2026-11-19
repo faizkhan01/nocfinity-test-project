@@ -11,7 +11,7 @@ function contentSecurityPolicy(nonce: string, https: boolean): string {
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' https://js.stripe.com${dev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https://*.stripe.com",
+    "img-src 'self' data: blob: https://*.stripe.com https://res.cloudinary.com",
     "font-src 'self'",
     `connect-src 'self' https://api.stripe.com https://r.stripe.com${dev ? " ws: wss:" : ""}`,
     "frame-src https://js.stripe.com https://hooks.stripe.com https://m.stripe.network",

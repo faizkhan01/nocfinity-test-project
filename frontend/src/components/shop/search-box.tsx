@@ -1,7 +1,6 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
@@ -11,6 +10,7 @@ import { api } from "@/lib/api/client";
 import { assetUrl, cn, money } from "@/lib/format";
 import { pickParams, shopHref } from "@/lib/shop-filters";
 import type { Paginated, ProductSummary } from "@/lib/types";
+import { MediaImage } from "@/components/ui/media-image";
 
 const MIN_CHARS = 2;
 const SUGGESTIONS = 6;
@@ -165,7 +165,7 @@ export function SearchBox({ className, autoFocus, onSubmitted }: { className?: s
                       className={cn("flex items-center gap-3 px-4 py-2", i === active && "bg-surface")}
                     >
                       <span className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-product">
-                        {product.image && <Image src={assetUrl(product.image)!} alt="" fill sizes="48px" className="object-cover" />}
+                        {product.image && <MediaImage src={assetUrl(product.image)!} alt="" fill sizes="48px" className="object-cover" />}
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm">

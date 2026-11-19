@@ -2,7 +2,6 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Search } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -15,6 +14,7 @@ import type { Order, OrderStatus, Paginated } from "@/lib/types";
 import { Forbidden } from "./forbidden";
 import { Can, useCan } from "./staff-context";
 import { Card, EmptyRow, LoadingRows, PageHeader, Select, SimplePager, Table, TextInput } from "./ui";
+import { MediaImage } from "@/components/ui/media-image";
 
 const STATUSES: OrderStatus[] = ["pending", "paid", "processing", "shipped", "delivered", "cancelled"];
 
@@ -143,7 +143,7 @@ export function OrderDetail({ id }: { id: string }) {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <span className="relative size-11 shrink-0 overflow-hidden rounded-lg bg-product">
-                        {item.image && <Image src={assetUrl(item.image)!} alt="" fill sizes="44px" className="object-cover" />}
+                        {item.image && <MediaImage src={assetUrl(item.image)!} alt="" fill sizes="44px" className="object-cover" />}
                       </span>
                       <span>
                         <span className="block font-medium">{item.name}</span>

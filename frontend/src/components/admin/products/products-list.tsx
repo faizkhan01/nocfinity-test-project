@@ -2,7 +2,6 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, Search, Trash2 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -15,6 +14,7 @@ import { Forbidden } from "../forbidden";
 import { Can, useCan } from "../staff-context";
 import { Badge, Card, EmptyRow, LoadingRows, PageHeader, Select, SimplePager, Table, Toggle } from "../ui";
 import { useAdminCategories, type AdminProduct } from "./types";
+import { MediaImage } from "@/components/ui/media-image";
 
 export function ProductsList() {
   const can = useCan();
@@ -107,7 +107,7 @@ export function ProductsList() {
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     <span className="relative size-11 shrink-0 overflow-hidden rounded-lg bg-product">
-                      {p.image && <Image src={assetUrl(p.image)!} alt="" fill sizes="44px" className="object-cover" />}
+                      {p.image && <MediaImage src={assetUrl(p.image)!} alt="" fill sizes="44px" className="object-cover" />}
                     </span>
                     <span className="min-w-0">
                       <span className="block truncate font-medium">{p.name}</span>

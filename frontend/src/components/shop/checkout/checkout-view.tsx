@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 import type { z } from "zod";
 import { OrderSummary } from "@/components/shop/cart/order-summary";
@@ -14,6 +13,7 @@ import { assetUrl, money } from "@/lib/format";
 import type { Customer, Order } from "@/lib/types";
 import { addressSchema } from "@/lib/validation";
 import { PaymentForm } from "./payment-form";
+import { MediaImage } from "@/components/ui/media-image";
 
 type Started = { order: Order; payment: { client_secret: string; publishable_key: string } };
 type Address = z.infer<typeof addressSchema>;
@@ -129,7 +129,7 @@ export function CheckoutView({ customer }: { customer: Customer }) {
             {cart.items.map((item) => (
               <li key={item.id} className="flex items-center gap-3 text-sm">
                 <span className="relative size-14 shrink-0 overflow-hidden rounded-lg bg-product">
-                  {item.product.image && <Image src={assetUrl(item.product.image)!} alt="" fill sizes="56px" className="object-cover" />}
+                  {item.product.image && <MediaImage src={assetUrl(item.product.image)!} alt="" fill sizes="56px" className="object-cover" />}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">{item.product.name}</span>

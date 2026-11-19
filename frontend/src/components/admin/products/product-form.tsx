@@ -2,7 +2,6 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { ImagePlus, Plus, X } from "lucide-react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -13,6 +12,7 @@ import { ApiError, errorMessage } from "@/lib/api/errors";
 import { assetUrl, cn } from "@/lib/format";
 import { Card, Select, TextInput, Toggle } from "../ui";
 import { useAdminCategories, type AdminProduct } from "./types";
+import { MediaImage } from "@/components/ui/media-image";
 
 const SIZE_PRESETS = ["XX-Small", "X-Small", "Small", "Medium", "Large", "X-Large", "XX-Large", "3X-Large", "4X-Large"];
 const STYLES = ["casual", "formal", "party", "gym"];
@@ -183,7 +183,7 @@ export function ProductForm({ product }: { product?: AdminProduct }) {
           <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4">
             {existing.map((img) => (
               <li key={img.id} className="relative aspect-square overflow-hidden rounded-xl bg-product">
-                <Image src={assetUrl(img.url)!} alt="" fill sizes="160px" className="object-cover" />
+                <MediaImage src={assetUrl(img.url)!} alt="" fill sizes="160px" className="object-cover" />
                 <button type="button" onClick={() => setRemoved((r) => [...r, img.id])} aria-label="Remove image" className="absolute right-1.5 top-1.5 rounded-full bg-white/90 p-1 shadow">
                   <X className="size-3.5" />
                 </button>

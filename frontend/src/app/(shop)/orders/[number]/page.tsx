@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Breadcrumbs } from "@/components/shop/breadcrumbs";
@@ -9,6 +8,7 @@ import { apiGet } from "@/lib/api/server";
 import { ApiError } from "@/lib/api/errors";
 import { assetUrl, cn, formatDate, money } from "@/lib/format";
 import type { Order, OrderStatus } from "@/lib/types";
+import { MediaImage } from "@/components/ui/media-image";
 
 type Props = { params: Promise<{ number: string }>; searchParams: Promise<{ placed?: string }> };
 
@@ -81,7 +81,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
               {i > 0 && <hr className="my-4 border-line" />}
               <div className="flex gap-4">
                 <span className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-product sm:size-24">
-                  {item.image && <Image src={assetUrl(item.image)!} alt={item.name} fill sizes="96px" className="object-cover" />}
+                  {item.image && <MediaImage src={assetUrl(item.image)!} alt={item.name} fill sizes="96px" className="object-cover" />}
                 </span>
                 <div className="min-w-0 flex-1">
                   {item.product_slug ? (

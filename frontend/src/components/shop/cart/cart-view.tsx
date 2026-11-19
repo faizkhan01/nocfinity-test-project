@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowIcon, TrashIcon } from "@/components/icons";
@@ -11,6 +10,7 @@ import { useCustomer } from "@/hooks/use-customer";
 import { assetUrl, money } from "@/lib/format";
 import type { CartItem } from "@/lib/types";
 import { OrderSummary } from "./order-summary";
+import { MediaImage } from "@/components/ui/media-image";
 
 export function CartView() {
   const { data: cart, isLoading } = useCart();
@@ -66,7 +66,7 @@ function Line({ item }: { item: CartItem }) {
   return (
     <div className="flex gap-[14px] sm:gap-4">
       <Link href={`/product/${item.product.slug}`} className="relative size-[99px] shrink-0 overflow-hidden rounded-[8.66px] bg-product sm:size-[124px]">
-        {image && <Image src={image} alt={item.product.name} fill sizes="124px" className="object-cover" />}
+        {image && <MediaImage src={image} alt={item.product.name} fill sizes="124px" className="object-cover" />}
       </Link>
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-start justify-between gap-2">
