@@ -231,6 +231,7 @@ The live demo runs on two platforms.
 Images and email use two free external services, set on both `api` and `worker`:
 - **Cloudinary:** `MEDIA_DRIVER=cloudinary`, `CLOUDINARY_URL`, `CLOUDINARY_FOLDER=nocfinity`.
 - **Brevo:** `MAIL_MAILER=routed`, `BREVO_API_KEY`, and `MAIL_FROM_ADDRESS` set to a sender verified in Brevo.
+- **Stripe webhooks:** a Stripe event destination points at `https://<api>/api/v1/webhooks/stripe` with the four `payment_intent` events (`amount_capturable_updated`, `succeeded`, `payment_failed`, `canceled`), and its signing secret is `STRIPE_WEBHOOK_SECRET` on `api`.
 
 Search runs on the built-in matcher (`SCOUT_DRIVER=database`), because Railway's free plan allows five services. It still finds partial words, typos and plurals. On a paid plan, add a Meilisearch service and set `SCOUT_DRIVER=meilisearch`, `MEILISEARCH_HOST` and `MEILISEARCH_KEY`; the API indexes the catalog on boot.
 
