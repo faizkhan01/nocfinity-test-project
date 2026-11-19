@@ -108,7 +108,7 @@ A guest cart is identified by the `X-Cart-Token` header; its value is returned a
 | GET | `/orders` | Your orders; `status` filter, 10 per page. |
 | GET | `/orders/{number}` | Detail with items, totals, payment, status history. Another customer's order is 404. |
 | POST | `/orders/{number}/cancel` | While `pending` or `paid`. Refunds and restores stock. |
-| POST | `/webhooks/stripe` | Stripe signature-verified; `payment_intent.*` events. |
+| POST | `/webhooks/stripe` | Stripe signature-verified; `payment_intent.*` events. Each event ID is processed once: a redelivery returns `{ "received": true, "outcome": "duplicate" }`, and a processing failure returns 500 so Stripe retries. |
 
 ## Admin (staff token; each route needs the listed permission)
 

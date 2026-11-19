@@ -82,7 +82,7 @@ Each check covers active state, start and end dates, the total usage limit, the 
 
 1. **Checkout:** the cart is re-priced and re-checked. Any unavailable item stops checkout with a per-item message. A `pending` order is created with item snapshots (name, SKU, image, unit price), so later catalog edits never change past orders. The customer's previous unpaid checkout is voided.
 2. A card-only PaymentIntent is created with **`capture_method=manual`**: the card is authorized, not charged.
-3. The browser confirms the card with Stripe Elements, then calls `POST /orders/{number}/confirm-payment`. The Stripe webhook calls the same idempotent code.
+3. The browser confirms the card with Stripe Elements, then calls `POST /orders/{number}/confirm-payment`. The Stripe webhook and the reconciliation job (below) call the same idempotent code.
 4. `PaymentService::finalize` **reads the intent from Stripe itself** and never trusts the client. It checks that the status is authorized, the amount, currency and order ID match, and the payment method is a card.
 5. Inside one DB transaction, for the order (row locked, skipped if no longer pending):
    - Product rows are locked with `SELECT … FOR UPDATE`, in ID order to avoid deadlocks.
@@ -99,7 +99,24 @@ Each check covers active state, start and end dates, the total usage limit, the 
 - `processing → shipped | cancelled`
 - `shipped → delivered`
 
-Staff can never set `paid` by hand. Cancelling a paid order restores stock (under the same locks), gives back the coupon use and refunds the payment; cancelling a pending one voids the authorization. Every change writes `order_status_histories` and queues an email. A scheduled job expires unpaid orders after `SHOP_PENDING_ORDER_TTL` minutes.
+Staff can never set `paid` by hand. Cancelling a paid order restores stock (under the same locks), gives back the coupon use and refunds the payment; cancelling a pending one voids the authorization. Every change writes `order_status_histories` and queues an email. `payments:reconcile` settles what the browser and webhooks did not (see below).
+
+### Webhooks and reconciliation
+
+Three paths can settle a payment: the browser's confirmation, a Stripe webhook, and a scheduled reconciliation. All three call the same idempotent `finalize`, which re-reads the intent from Stripe and locks the order row, so whichever arrives first wins and the others change nothing.
+
+- **Webhook events are recorded** in `stripe_events` by Stripe's event ID, with the type, the payment intent, the number of attempts and the outcome (`finalized`, `failure_recorded`, `cancelled`, `ignored`, or `rejected:<code>`).
+  - A redelivered event is answered `duplicate` and not processed again.
+  - Two deliveries arriving together cannot both run: each one has to claim the row with a single conditional update first.
+  - If processing crashes, the claim is released and the API answers 500, so Stripe retries. A claim left behind by a process that died expires after 5 minutes.
+  - Business outcomes such as "sold out" are final and answered 200, so Stripe does not retry them.
+  - Processed events are pruned after 30 days (`model:prune`).
+- **Reconciliation** (`payments:reconcile`, every 5 minutes) checks each order that has been pending for more than `SHOP_RECONCILE_AFTER_MINUTES` (5) against Stripe. This covers a customer who closes the browser right after paying while webhooks are off or delayed:
+  - **Authorized or captured:** finalized as usual. Stock is locked and taken, the payment is captured and the confirmation email is sent. If the stock sold out meanwhile, the order is cancelled and the authorization voided.
+  - **Cancelled at Stripe:** the order is cancelled.
+  - **Unpaid:** left alone until `SHOP_PENDING_ORDER_TTL` (60 minutes), then cancelled and voided. A payment Stripe is still processing is never voided.
+  - An authorized payment is never voided by expiry, which the previous expiry job did.
+  - One order failing (e.g. a Stripe timeout) does not stop the others. It is reported and retried on the next run.
 
 **Order numbers** are `ORD-{year}-{id padded to 6}`. They're derived from the auto-increment ID, so they're unique without a separate counter.
 
@@ -183,6 +200,5 @@ Trusted proxies are read from config **at request time**. An earlier version rea
 - **Product variants:** stock per colour and size instead of per product. The design's selectors suggest it; the brief asked for product-level stock.
 - **Infrastructure:**
   - Meilisearch in production too (it needs a paid Railway plan; the code switches with `SCOUT_DRIVER`).
-- **Webhook event table:** record processed Stripe event IDs, and add a reconciliation job for intents authorized but never finalized (for example if the browser closes and webhooks are off).
 - **CI:** run the backend, unit and end-to-end suites on every push (they run locally today), plus Larastan once it is tuned.
 - **Accessibility:** a full audit, and a dark theme for the storefront (the admin has one).

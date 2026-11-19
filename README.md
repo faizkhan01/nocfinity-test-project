@@ -131,7 +131,7 @@ Use any future expiry date and any CVC.
 
 Payments are **authorized first and captured only after stock is secured**. If an item sells out while the customer is paying, the authorization is voided and nobody is charged ([details](docs/ARCHITECTURE.md#money-stock-and-payments)).
 
-Webhooks are optional, because the browser confirmation already settles the order. To also process Stripe webhooks locally:
+Webhooks are optional: the browser confirmation settles the order, and `payments:reconcile` (every 5 minutes) settles any payment the browser never confirmed, for example after the customer closed the tab. To also process Stripe webhooks locally (each event is recorded and processed once):
 
 ```bash
 stripe listen --forward-to localhost:8000/api/v1/webhooks/stripe
@@ -140,7 +140,7 @@ stripe listen --forward-to localhost:8000/api/v1/webhooks/stripe
 
 ## Tests
 
-### Backend: 76 feature tests
+### Backend: 87 feature tests
 
 ```bash
 docker compose exec app php artisan test
@@ -148,6 +148,7 @@ docker compose exec app php artisan test
 
 They run against a separate MySQL database (`shop_testing`) with a fake payment gateway, and cover:
 - **Checkout and money:** the full flow, ignoring client-sent prices and totals, overselling while a payment is in flight, declined cards, amount mismatches, idempotent capture, expired coupons and coupon usage limits under concurrency, parallel checkouts, and refunds with stock restored on cancel.
+- **Webhooks and reconciliation:** duplicate and concurrent webhook deliveries, retries after a crash, signature checks, finishing payments the browser never confirmed, never voiding an authorized payment, and expiring unpaid orders.
 - **Access and security:** IDOR, login lockout, rate limits, visitor IP and https handling behind the proxy, customer/admin guard separation, permission middleware, Super Admin protections and catalog filters.
 - **Search:** partial words, typos, plurals, colours, categories and synonyms.
 - **Images and email:** Cloudinary uploads (request signing, cleanup after a failed save, images kept for past orders, outages as 503, moving old images), and email (Brevo's API, routing demo addresses to Mailpit, every email queued after commit on the right queue).
@@ -222,7 +223,7 @@ The live demo runs on two platforms.
 
 **Railway** (`nocfinity-shop` project):
 - **`api`:** `backend/Dockerfile.production`. FrankenPHP on `$PORT`. On boot it caches config and routes, migrates, seeds an empty database, and moves any image still on the volume (`/app/storage/app/public`) to Cloudinary.
-- **`worker`:** the same image with `CONTAINER_ROLE=worker`. Runs `queue:work --queue=high,default` (emails, auth emails first, and search indexing) and the scheduler (expiring unpaid orders, pruning guest carts). The worker exits every hour to stay fresh; the start script restarts it (and the scheduler) in place, and failed jobs show up in the admin activity log.
+- **`worker`:** the same image with `CONTAINER_ROLE=worker`. Runs `queue:work --queue=high,default` (emails, auth emails first, and search indexing) and the scheduler (reconciling payments with Stripe every 5 minutes, pruning old webhook events and guest carts). The worker exits every hour to stay fresh; the start script restarts it (and the scheduler) in place, and failed jobs show up in the admin activity log.
 - **`MySQL`:** Railway's managed MySQL, wired in with `DB_URL=${{MySQL.MYSQL_URL}}`.
 - **`mailpit`:** the demo inbox for the seeded `.test` accounts, behind basic auth (`MP_UI_AUTH`).
 - **`Redis`:** cache, queue and rate limits for the API and the worker (`REDIS_URL=${{Redis.REDIS_URL}}`).
