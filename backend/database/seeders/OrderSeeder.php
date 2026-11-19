@@ -11,7 +11,6 @@ use App\Models\ProductReview;
 use App\Services\Catalog\ReviewService;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 /** Demo customers, orders in every status over the last 30 days, and verified-buyer reviews. */

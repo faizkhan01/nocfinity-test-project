@@ -29,7 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(SecurityHeaders::class);
         $middleware->prependToGroup('api', ForceJsonRequest::class);
-        $middleware->replace(\Illuminate\Http\Middleware\TrustProxies::class, TrustProxies::class);
+        $middleware->replace(Illuminate\Http\Middleware\TrustProxies::class, TrustProxies::class);
         $middleware->append(ResolveClientIp::class);
         $middleware->alias([
             'permission' => EnsurePermission::class,

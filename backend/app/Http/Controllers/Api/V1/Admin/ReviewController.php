@@ -7,8 +7,8 @@ use App\Models\ProductReview;
 use App\Services\ActivityLogger;
 use App\Services\Catalog\ReviewService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class ReviewController extends Controller
 {

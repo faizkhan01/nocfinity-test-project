@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Role;
 use App\Models\Staff;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PragmaRX\Google2FA\Google2FA;
@@ -103,7 +104,7 @@ class TwoFactorTest extends TestCase
     {
         $this->staffWithTwoFactor('lost-sa@shop.test');
         $staff = Staff::where('email', 'lost-sa@shop.test')->first();
-        $staff->roles()->sync([\App\Models\Role::where('slug', Staff::SUPER_ADMIN)->value('id')]);
+        $staff->roles()->sync([Role::where('slug', Staff::SUPER_ADMIN)->value('id')]);
         $staff->createToken('stale');
 
         $this->artisan('app:reset-two-factor', ['email' => 'LOST-SA@shop.test'])->assertSuccessful();

@@ -5,7 +5,6 @@ namespace App\Services\Checkout;
 use App\Exceptions\ApiException;
 use App\Exceptions\InsufficientStockException;
 use App\Models\Cart;
-use App\Models\CartItem;
 use App\Models\Customer;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
