@@ -2,3 +2,6 @@
 .idea/
 .vscode/
 *.log
+
+# Compose variables for the local user (UID/GID)
+/.env

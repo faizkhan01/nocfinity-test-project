@@ -1,0 +1,152 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (Pint, PHPUnit)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: shop_testing
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s --health-timeout=3s --health-retries=30
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USERNAME: root
+      DB_PASSWORD: root
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: pdo_mysql, bcmath, intl, zip, gd, exif, pcntl, redis
+          coverage: none
+
+      - uses: ramsey/composer-install@v3
+        with:
+          working-directory: backend
+
+      - name: Prepare environment
+        run: cp .env.example .env && php artisan key:generate
+
+      - name: Code style
+        run: vendor/bin/pint --test
+
+      - name: Tests
+        run: php artisan test
+
+  frontend:
+    name: Frontend (lint, types, unit tests, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+
+      - name: Build
+        run: npm run build
+        env:
+          API_URL: http://localhost:8000
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-coverage
+          path: frontend/coverage
+          if-no-files-found: ignore
+
+  e2e:
+    name: End-to-end (Playwright on Docker Compose)
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    timeout-minutes: 30
+    env:
+      E2E_BASE_URL: http://localhost:3000
+      MAILPIT_URL: http://localhost:8025
+      # Optional repository secrets; without them the Stripe checkout specs are skipped.
+      STRIPE_KEY: ${{ secrets.STRIPE_TEST_PUBLISHABLE_KEY }}
+      STRIPE_SECRET: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure the stack
+        run: |
+          # Containers run as the runner's user so they can write to the mounted checkout.
+          printf 'UID=%s\nGID=%s\n' "$(id -u)" "$(id -g)" > .env
+          cp backend/.env.example backend/.env
+          if [ -n "$STRIPE_KEY" ] && [ -n "$STRIPE_SECRET" ]; then
+            sed -i "s|^STRIPE_KEY=.*|STRIPE_KEY=$STRIPE_KEY|; s|^STRIPE_SECRET=.*|STRIPE_SECRET=$STRIPE_SECRET|" backend/.env
+            echo "E2E_STRIPE=1" >> "$GITHUB_ENV"
+          fi
+
+      - name: Start the stack
+        run: docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build --wait
+
+      - name: Wait for the storefront
+        run: |
+          for _ in $(seq 1 60); do
+            curl -fsS -o /dev/null "$E2E_BASE_URL/" && curl -fsS -o /dev/null "$E2E_BASE_URL/bff/products" && exit 0
+            sleep 2
+          done
+          echo "Storefront did not come up"; exit 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Playwright
+        working-directory: frontend
+        run: npm ci && npx playwright install --with-deps chromium
+
+      - name: Run end-to-end tests
+        working-directory: frontend
+        run: npm run e2e
+
+      - name: Stack logs
+        if: failure()
+        run: docker compose logs --no-color --tail=200 app queue frontend nginx
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+          if-no-files-found: ignore
+          retention-days: 14
