@@ -5,20 +5,30 @@
 ```
 backend/            Laravel 12 REST API
   app/Enums/          OrderStatus (with its allowed transitions), CouponType, PaymentStatus, UserType
-  app/Models/         User (shared table) → Customer / Staff, catalog, cart, order, payment, RBAC models
-  app/Services/       Business rules: Auth, Catalog, Checkout (cart, pricing, coupons), Orders (checkout,
-                      payment, stock, lifecycle), Payments (gateway interface, Stripe + fake), Admin
+  app/Models/         User (shared table) → Customer / Staff, catalog, cart, order, payment, RBAC models,
+                      StripeEvent (webhook log)
+  app/Services/       Business rules: Auth, Catalog (search, matcher, cache), Checkout (cart, pricing, coupons),
+                      Orders (checkout, payment, stock, lifecycle), Payments (gateway interface, Stripe + fake,
+                      webhook handler, reconciler), Media (public disk or Cloudinary), Admin
   app/Http/           Thin controllers (Storefront, Admin, Auth, Webhooks), FormRequests, API Resources,
-                      middleware (permission, active account, security headers)
+                      middleware (permission, active account, visitor IP, security headers)
+  app/Console/        Scheduled and break-glass commands (payments:reconcile, carts:prune-guests,
+                      app:move-media-to-cloudinary, app:reset-two-factor)
+  app/Mail/, app/Notifications/  Queued emails, and the transport that routes demo addresses to Mailpit
   database/           Migrations, factories, seeders and the seed product images
-  tests/Feature/      Checkout/stock/payment, auth, RBAC, catalog and admin smoke tests
+  docker/             Dev entrypoint and the production start script (web or supervised worker)
+  tests/Feature/      Checkout, payments, webhooks and reconciliation, auth, RBAC, search, media, email
+                      and admin smoke tests
 frontend/           Next.js 15 App Router
   src/app/(shop)/     Storefront routes (server components fetch the API directly)
   src/app/admin/      (auth) login/reset and (panel) admin routes behind a permission-aware layout
   src/app/bff/        Same-origin proxy to the API that owns the auth cookies
   src/components/     shop/, admin/, ui/ (shared primitives), icons exported from Figma
-  src/lib/            API clients (server/browser), types, validation, formatting
+  src/lib/            API clients (server/browser), types, validation, formatting, image loader
+  **/*.test.ts(x)     Vitest unit tests, next to the code they cover
+  e2e/                Playwright end-to-end specs
 docker-compose.yml  Whole stack
+docker-compose.e2e.yml  Overrides for end-to-end runs (higher per-IP rate limits)
 ```
 
 Controllers validate input with a FormRequest, call a service and return an API Resource. Business rules live in `app/Services`, which keeps them testable and in one place.

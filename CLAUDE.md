@@ -50,6 +50,7 @@ E-commerce test project: Laravel 12 REST API (`backend/`) + Next.js App Router s
 - Coupons are re-validated (active, dates, usage limit, minimum order) at checkout and again when payment is finalized.
 - Stock: checked at add-to-cart and checkout, and decremented only when an order becomes paid. That happens inside a DB transaction with `lockForUpdate()` on product rows. Cancelling a paid order restores stock.
 - Payments use a manual-capture PaymentIntent: authorize, lock and decrement stock, then capture. If stock fails, cancel the intent so the customer is never charged.
+- Settle payments only through `PaymentService::finalize`, which the browser confirmation, the Stripe webhook and `payments:reconcile` all share. Never void an intent that is authorized; finalize it instead.
 - Every customer-owned resource query is scoped to the authenticated user (IDOR). Use `$request->user()->orders()`, never `Order::find($id)`.
 - Permissions, not role names, protect admin routes (`permission:products.create`). Super Admin bypasses checks via `Gate::before` and cannot be edited or deleted.
 - Login: generic failure message, throttled after 5 failed attempts per email+IP.
