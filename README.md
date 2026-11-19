@@ -82,6 +82,7 @@ cd frontend && cp .env.example .env.local && npm install && npm run dev
 | `BFF_SHARED_SECRET` | Shared with the Next.js server so the API believes the visitor IP it forwards (set the same value on both sides). |
 | `CLIENT_IP_HEADER` | Behind an edge that overwrites a client-IP header (Railway: `X-Real-IP`), name it here. |
 | `CACHE_STORE`, `QUEUE_CONNECTION`, `REDIS_*` | Redis for cache, queue and rate limits (defaults in `.env.example`). |
+| `MEDIA_DRIVER`, `CLOUDINARY_URL`, `CLOUDINARY_FOLDER` | `local` (public disk, the default) or `cloudinary` for product and category images on Cloudinary's CDN, resized per screen. `CLOUDINARY_URL` is `cloudinary://<api_key>:<api_secret>@<cloud_name>` from the Cloudinary console (free plan, no card). |
 | `SCOUT_DRIVER`, `MEILISEARCH_*` | `meilisearch`, or `database` for the built-in matcher (no extra service). Both handle typos and partial words. |
 
 The frontend reads only `API_URL` (where Laravel is reachable from the Next.js server) and, in Docker, `COOKIE_SECURE`.
@@ -209,6 +210,7 @@ Notes on running them:
 | Activity log | ✅ |
 | 2FA (TOTP) for admins | ✅ Set up from **Profile**: QR code, confirm a code, 8 single-use recovery codes. Login then needs the code, with replay protection and an attempt limit; staff managers can reset a colleague's 2FA. |
 | Admin dark mode | ✅ Light / Dark / System toggle in the admin header, rendered on the server from a cookie so there is no flash. |
+| Image storage and resizing | ✅ Cloudinary (`MEDIA_DRIVER=cloudinary`): uploads go to its CDN and every image is served at the width the screen needs, as AVIF/WebP. |
 | Live deployment | ✅ Storefront on Vercel; API, queue worker, MySQL and a password-protected Mailpit on Railway (see [Deployment](#deployment)). |
 
 ## Deployment

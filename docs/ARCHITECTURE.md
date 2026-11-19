@@ -118,6 +118,16 @@ Staff can never set `paid` by hand. Cancelling a paid order restores stock (unde
   - The term index lives in Redis and is rebuilt when a searchable product or category field changes. A search takes about 1 ms on the seeded catalog. Past tens of thousands of products, switch to Meilisearch.
 - **Fallback:** if Meilisearch is unreachable, search uses the built-in matcher instead of failing.
 
+## Images
+
+- **Storage:** `MediaStorage` saves uploads on the public disk or, with `MEDIA_DRIVER=cloudinary`, on Cloudinary through signed Upload API calls. Originals are capped at 2000px on upload.
+- **References:** a stored value is either a disk path (`products/abc.jpg`) or `cloudinary:v<version>/<public_id>`. Both kinds resolve to URLs side by side, so switching drivers never breaks existing images, and `php artisan app:move-media-to-cloudinary` moves the old ones over (idempotent, with `--dry-run`).
+- **Resizing:** the API returns a Cloudinary URL with automatic format and quality. The frontend's `MediaImage` adds a width-limited resize per `srcset` entry, so a 48px search thumbnail and a 444px gallery image are both served at their own size from the CDN. Local uploads still use the Next.js optimizer.
+- **Consistency:**
+  - Deletes run only after the database transaction commits, and uploads from a save that fails are removed again.
+  - An image that a past order shows is kept when it is removed from the product.
+  - If Cloudinary is unreachable, the save fails with a 503 and nothing is half saved.
+
 ## Redis
 
 - **Queue:** emails, search indexing.
@@ -148,7 +158,7 @@ Trusted proxies are read from config **at request time**. An earlier version rea
   - Product image uploads are restricted to JPG, PNG and WebP (no SVG), checked for type, size and dimensions, and stored under random names.
 - **Headers:**
   - **Laravel:** `nosniff`, `X-Frame-Options: DENY`, Referrer-Policy, Permissions-Policy, `Content-Security-Policy: default-src 'none'` on JSON responses, and HSTS over HTTPS.
-  - **Next.js:** a per-request nonce-based CSP allowing only Stripe as a third party, plus the same frame, sniffing and referrer headers.
+  - **Next.js:** a per-request nonce-based CSP allowing only Stripe as a third party (and Cloudinary for images), plus the same frame, sniffing and referrer headers.
 - **Responses** are whitelisted API Resources: no password hashes, tokens, Stripe secrets or internal flags. Production errors are generic, and model class names never leak through 404s.
 - **Open redirects:** `?next=` only accepts same-site paths.
 - **Rate limits:** auth routes (10/min), checkout (10/min) and the API overall (120/min) are rate-limited per visitor IP (see above).
@@ -159,7 +169,6 @@ Trusted proxies are read from config **at request time**. An earlier version rea
 - **Re-authentication** prompt for sensitive admin actions, and optionally *requiring* 2FA for selected roles.
 - **Product variants:** stock per colour and size instead of per product. The design's selectors suggest it; the brief asked for product-level stock.
 - **Infrastructure:**
-  - Object storage (S3 or Cloudflare R2) for uploads, with image resizing.
   - Meilisearch in production too (it needs a paid Railway plan; the code switches with `SCOUT_DRIVER`).
 - **Webhook event table:** record processed Stripe event IDs, and add a reconciliation job for intents authorized but never finalized (for example if the browser closes and webhooks are off).
 - **CI:** run the backend, unit and end-to-end suites on every push (they run locally today), plus Larastan once it is tuned.
