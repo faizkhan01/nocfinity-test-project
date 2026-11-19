@@ -7,14 +7,18 @@ php artisan view:cache
 
 # The worker role runs the queue and the scheduler; the web role migrates and serves HTTP.
 if [ "$CONTAINER_ROLE" = "worker" ]; then
-    trap 'kill -TERM $(jobs -p) 2>/dev/null; exit 0' TERM INT
-    php artisan schedule:work &
-    # queue:work exits cleanly every hour to stay fresh, and a clean exit is not restarted by the platform, so loop it here.
-    # Auth emails (high) are always taken before order emails and search indexing (default).
-    while true; do
-        php artisan queue:work --queue=high,default --tries=3 --backoff=10 --max-time=3600 &
-        wait $! || sleep 5
-    done
+    # On shutdown, stop both loops and their PHP processes, letting the current job finish.
+    trap 'trap "" TERM INT; kill -TERM 0 2>/dev/null; wait; exit 0' TERM INT
+    # The platform only restarts a container that fails, so anything that stops is restarted here.
+    keep_running() {
+        while true; do
+            "$@" &
+            wait $! || sleep 5
+        done
+    }
+    keep_running php artisan schedule:work &
+    # queue:work exits cleanly every hour to stay fresh; auth emails (high) go before order emails and indexing (default).
+    keep_running php artisan queue:work --queue=high,default --tries=3 --backoff=10 --max-time=3600
 fi
 
 php artisan migrate --force
