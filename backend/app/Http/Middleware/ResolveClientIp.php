@@ -18,9 +18,15 @@ class ResolveClientIp
         $ip = $this->fromBff($request) ?? $this->fromEdgeHeader($request);
 
         if ($ip !== null) {
+            // Once REMOTE_ADDR is the visitor, the proxy's forwarded proto/host stop counting, so keep what it said.
+            $secure = $request->isSecure();
+            $host = $request->getHttpHost();
+
             // With the forwarding headers removed, ip() falls back to this address.
             $request->server->set('REMOTE_ADDR', $ip);
             $request->headers->remove('X-Forwarded-For');
+            $request->server->set('HTTPS', $secure ? 'on' : 'off');
+            $request->headers->set('HOST', $host);
         }
 
         $request->headers->remove('X-BFF-Secret');
