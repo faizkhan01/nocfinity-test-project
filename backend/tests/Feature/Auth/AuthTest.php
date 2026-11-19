@@ -4,7 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\Customer;
 use App\Models\Staff;
-use Illuminate\Auth\Notifications\ResetPassword;
+use App\Notifications\QueuedResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -111,7 +111,7 @@ class AuthTest extends TestCase
         $this->postJson('/api/v1/auth/forgot-password', ['email' => 'ghost@example.com'])->assertOk();
 
         $token = null;
-        Notification::assertSentTo($customer, ResetPassword::class, function (ResetPassword $n) use (&$token) {
+        Notification::assertSentTo($customer, QueuedResetPassword::class, function (QueuedResetPassword $n) use (&$token) {
             $token = $n->token;
 
             return true;

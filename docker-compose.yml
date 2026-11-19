@@ -49,7 +49,7 @@ services:
 
   queue:
     <<: *backend
-    command: ["php", "artisan", "queue:work", "--tries=3", "--backoff=10"]
+    command: ["php", "artisan", "queue:work", "--queue=high,default", "--tries=3", "--backoff=10"]
     depends_on:
       app:
         condition: service_healthy

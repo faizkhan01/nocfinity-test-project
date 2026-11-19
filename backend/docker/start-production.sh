@@ -8,7 +8,8 @@ php artisan view:cache
 # The worker role runs the queue and the scheduler; the web role migrates and serves HTTP.
 if [ "$CONTAINER_ROLE" = "worker" ]; then
     php artisan schedule:work &
-    exec php artisan queue:work --tries=3 --backoff=10 --max-time=3600
+    # Auth emails (high) are always taken before order emails and search indexing (default).
+    exec php artisan queue:work --queue=high,default --tries=3 --backoff=10 --max-time=3600
 fi
 
 php artisan migrate --force

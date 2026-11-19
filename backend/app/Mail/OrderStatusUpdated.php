@@ -15,6 +15,11 @@ class OrderStatusUpdated extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
+    public int $tries = 5;
+
+    /** @var list<int> seconds between attempts, so a short mail-provider outage is ridden out */
+    public array $backoff = [10, 60, 300, 900];
+
     private ?Order $loaded = null;
 
     public function __construct(public int $orderId)
