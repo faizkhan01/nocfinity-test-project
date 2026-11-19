@@ -140,7 +140,7 @@ stripe listen --forward-to localhost:8000/api/v1/webhooks/stripe
 
 ## Tests
 
-### Backend: 74 feature tests
+### Backend: 76 feature tests
 
 ```bash
 docker compose exec app php artisan test
@@ -222,7 +222,7 @@ The live demo runs on two platforms.
 
 **Railway** (`nocfinity-shop` project):
 - **`api`:** `backend/Dockerfile.production`. FrankenPHP on `$PORT`. On boot it caches config and routes, migrates, seeds an empty database, and moves any image still on the volume (`/app/storage/app/public`) to Cloudinary.
-- **`worker`:** the same image with `CONTAINER_ROLE=worker`. Runs `queue:work --queue=high,default` (emails, auth emails first, and search indexing) and the scheduler (expiring unpaid orders, pruning guest carts). The worker exits every hour to stay fresh, and the start script restarts it in place.
+- **`worker`:** the same image with `CONTAINER_ROLE=worker`. Runs `queue:work --queue=high,default` (emails, auth emails first, and search indexing) and the scheduler (expiring unpaid orders, pruning guest carts). The worker exits every hour to stay fresh; the start script restarts it (and the scheduler) in place, and failed jobs show up in the admin activity log.
 - **`MySQL`:** Railway's managed MySQL, wired in with `DB_URL=${{MySQL.MYSQL_URL}}`.
 - **`mailpit`:** the demo inbox for the seeded `.test` accounts, behind basic auth (`MP_UI_AUTH`).
 - **`Redis`:** cache, queue and rate limits for the API and the worker (`REDIS_URL=${{Redis.REDIS_URL}}`).

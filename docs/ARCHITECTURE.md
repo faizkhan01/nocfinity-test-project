@@ -133,7 +133,8 @@ Staff can never set `paid` by hand. Cancelling a paid order restores stock (unde
 
 - **Always queued:** every email (verification, password reset, order updates) is a queued job, dispatched only after the database transaction commits, and sent by the worker. A slow or failing provider never slows a request or loses an email.
   - Auth emails go on a `high` queue that the worker (`--queue=high,default`) always drains first, so a reset link is not stuck behind order emails or search indexing.
-  - `queue:work` exits cleanly every hour (`--max-time`), and hosts such as Railway only restart a container that fails. The worker script therefore loops it, so the queue never stops.
+  - `queue:work` exits cleanly every hour (`--max-time`), and hosts such as Railway only restart a container that fails. The worker script therefore keeps both `queue:work` and `schedule:work` running, restarting either one if it stops, and stops both cleanly on shutdown.
+  - A job that uses up its retries is logged as critical and recorded in the admin **Activity log** (as "System", action `queue.job_failed`) with the job, queue and error, so a failing email provider is noticed instead of piling up silently in `failed_jobs`.
   - Each email is retried 5 times, backing off over about 20 minutes, and ends in `failed_jobs` if the provider is still down.
 - **Transport:** production uses Brevo's HTTP API, because hosts like Railway's free plan block outbound SMTP.
 - **Routing:** the `routed` mailer sends each recipient to the right place. Real inboxes go through Brevo. Placeholder addresses (the demo accounts on `.test`, and the reserved example domains) go to Mailpit, so the demo inbox keeps working and nothing bounces off Brevo's reputation.
